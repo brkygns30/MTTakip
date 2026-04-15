@@ -1,0 +1,1341 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>ShiftHub</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+
+<style>
+:root{--bg:#f5f6fa;--bg2:#ffffff;--bg3:#f0f1f7;--border:rgba(0,0,0,0.08);--border2:rgba(0,0,0,0.13);--text:#1a1d2e;--muted:#8a8fa8;--accent:#4f8ef7;--accent2:#3d7ae8;--green:#10b981;--amber:#f59e0b;--red:#ef4444;--purple:#8b5cf6;--radius:10px;--radius-lg:16px;--font:'Inter',sans-serif;--mono:'SF Mono','Fira Mono',monospace;}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html,body{height:100%;}
+body{font-family:var(--font);background:var(--bg);color:var(--text);display:flex;font-size:14px;line-height:1.5;overflow:hidden;}
+::-webkit-scrollbar{width:5px;height:5px;}
+::-webkit-scrollbar-track{background:transparent;}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:99px;}
+#sidebar{width:224px;min-width:224px;background:var(--bg2);border-right:1px solid var(--border);display:flex;flex-direction:column;z-index:10;box-shadow:2px 0 12px rgba(0,0,0,.04);transition:transform .25s ease;}
+.logo{display:flex;align-items:center;gap:10px;padding:20px 18px 16px;border-bottom:1px solid var(--border);}
+.logo-icon{width:34px;height:34px;background:var(--accent);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;}
+.logo-text{font-size:15px;font-weight:700;letter-spacing:-.3px;}
+nav{flex:1;padding:10px 8px;display:flex;flex-direction:column;gap:2px;overflow-y:auto;}
+.nav-item{display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:var(--radius);cursor:pointer;color:var(--muted);font-size:13.5px;font-weight:500;transition:all .15s;border:none;background:none;width:100%;text-align:left;font-family:var(--font);}
+.nav-item:hover{background:var(--bg3);color:var(--text);}
+.nav-item.active{background:rgba(79,142,247,.10);color:var(--accent);}
+.nav-item .icon{font-size:16px;width:20px;text-align:center;flex-shrink:0;}
+.sidebar-user{padding:12px 14px;border-top:1px solid var(--border);display:flex;align-items:center;gap:10px;}
+.avatar{border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;flex-shrink:0;}
+.user-name{font-size:13px;font-weight:600;}
+.user-role{font-size:11px;color:var(--muted);}
+#main{flex:1;display:flex;flex-direction:column;overflow:hidden;}
+.topbar{background:var(--bg2);border-bottom:1px solid var(--border);padding:14px 24px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-shrink:0;}
+.page-title{font-size:18px;font-weight:700;letter-spacing:-.4px;}
+.content{flex:1;overflow-y:auto;padding:24px;}
+.card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-lg);padding:20px;box-shadow:0 1px 4px rgba(0,0,0,.04);}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border-radius:var(--radius);font-size:13px;font-weight:600;cursor:pointer;border:none;transition:all .15s;font-family:var(--font);white-space:nowrap;}
+.btn-primary{background:var(--accent);color:#fff;}.btn-primary:hover{background:var(--accent2);}
+.btn-ghost{background:var(--bg3);color:var(--text);border:1px solid var(--border);}.btn-ghost:hover{border-color:var(--border2);}
+.btn-danger{background:rgba(239,68,68,.08);color:var(--red);border:1px solid rgba(239,68,68,.15);}.btn-danger:hover{background:rgba(239,68,68,.15);}
+.btn-success{background:rgba(16,185,129,.08);color:var(--green);border:1px solid rgba(16,185,129,.15);}.btn-success:hover{background:rgba(16,185,129,.15);}
+.btn-sm{padding:5px 10px;font-size:12px;}
+.badge{display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:99px;font-size:11px;font-weight:600;}
+.badge-blue{background:rgba(79,142,247,.12);color:var(--accent);}
+.badge-green{background:rgba(16,185,129,.12);color:var(--green);}
+.badge-amber{background:rgba(245,158,11,.12);color:var(--amber);}
+.badge-red{background:rgba(239,68,68,.12);color:var(--red);}
+.badge-purple{background:rgba(139,92,246,.12);color:var(--purple);}
+.badge-gray{background:rgba(0,0,0,.06);color:var(--muted);}
+.input,.select,textarea{background:var(--bg3);border:1px solid var(--border);color:var(--text);border-radius:var(--radius);padding:9px 12px;font-size:13px;font-family:var(--font);width:100%;transition:border .15s;outline:none;}
+.input:focus,.select:focus,textarea:focus{border-color:var(--accent);}
+.input::placeholder,textarea::placeholder{color:var(--muted);}
+label.lbl{display:block;font-size:11px;font-weight:600;color:var(--muted);margin-bottom:5px;text-transform:uppercase;letter-spacing:.04em;}
+.stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:14px;margin-bottom:24px;}
+.stat-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-lg);padding:18px 20px;position:relative;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,.04);}
+.stat-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:var(--accent-color,var(--accent));}
+.stat-value{font-size:26px;font-weight:700;letter-spacing:-1px;font-family:var(--mono);}
+.stat-label{font-size:12px;color:var(--muted);margin-top:2px;}
+.table-wrap{overflow-x:auto;border-radius:var(--radius-lg);border:1px solid var(--border);}
+table{width:100%;border-collapse:collapse;}
+th{background:#f8f9fc;padding:11px 14px;text-align:left;font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;border-bottom:1px solid var(--border);}
+td{padding:12px 14px;border-bottom:1px solid var(--border);font-size:13px;}
+tr:last-child td{border-bottom:none;}
+tr:hover td{background:rgba(0,0,0,.015);}
+.modal-overlay{position:fixed;inset:0;z-index:100;background:rgba(80,90,120,0.3);display:flex;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(4px);animation:fadeIn .15s ease;}
+.modal{background:var(--bg2);border:1px solid var(--border2);border-radius:var(--radius-lg);width:100%;max-width:460px;max-height:90vh;overflow-y:auto;animation:slideUp .2s ease;box-shadow:0 20px 60px rgba(0,0,0,.12);}
+.modal-header{display:flex;align-items:center;justify-content:space-between;padding:18px 20px;border-bottom:1px solid var(--border);}
+.modal-title{font-size:15px;font-weight:700;}
+.modal-body{padding:20px;display:flex;flex-direction:column;gap:14px;}
+.modal-footer{padding:14px 20px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:8px;}
+.btn-close{background:none;border:none;color:var(--muted);font-size:20px;cursor:pointer;padding:4px;line-height:1;border-radius:6px;}
+.btn-close:hover{color:var(--text);background:var(--bg3);}
+.tabs{display:flex;gap:4px;background:var(--bg3);border-radius:var(--radius);padding:4px;}
+.tab{padding:6px 14px;border-radius:7px;font-size:13px;font-weight:500;cursor:pointer;border:none;background:none;color:var(--muted);font-family:var(--font);transition:all .15s;}
+.tab.active{background:var(--bg2);color:var(--text);box-shadow:0 1px 4px rgba(0,0,0,.08);}
+#toast-container{position:fixed;bottom:24px;right:24px;z-index:200;display:flex;flex-direction:column;gap:8px;}
+.toast{background:var(--bg2);border:1px solid var(--border2);border-radius:var(--radius);padding:12px 16px;font-size:13px;display:flex;align-items:center;gap:10px;box-shadow:0 8px 32px rgba(0,0,0,.10);animation:slideUp .2s ease;min-width:260px;max-width:400px;}
+.toast.success{border-left:3px solid var(--green);}
+.toast.error{border-left:3px solid var(--red);background:#fff5f5;}
+.toast.info{border-left:3px solid var(--accent);}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+@keyframes slideUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.page{display:none;}
+.page.active{display:block;animation:slideUp .2s ease;}
+.person-row{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--border);}
+.person-row:last-child{border-bottom:none;}
+.color-opts{display:flex;gap:8px;flex-wrap:wrap;}
+.color-opt{width:24px;height:24px;border-radius:6px;cursor:pointer;border:2px solid transparent;transition:all .15s;}
+.color-opt.selected,.color-opt:hover{border-color:var(--text);transform:scale(1.1);}
+.leave-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-lg);padding:16px 18px;display:flex;align-items:flex-start;justify-content:space-between;gap:14px;flex-wrap:wrap;box-shadow:0 1px 4px rgba(0,0,0,.04);}
+.leave-card.pending{border-left:3px solid var(--amber);}
+.leave-card.approved{border-left:3px solid var(--green);}
+.leave-card.rejected{border-left:3px solid var(--red);}
+.leave-card.cancelled{border-left:3px solid #ccc;}
+.chart-bar-wrap{display:flex;flex-direction:column;gap:10px;}
+.chart-row{display:flex;align-items:center;gap:10px;}
+.chart-label{font-size:12px;color:var(--muted);width:100px;flex-shrink:0;text-align:right;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.chart-bar-bg{flex:1;height:10px;background:var(--bg3);border-radius:99px;overflow:hidden;}
+.chart-bar{height:100%;border-radius:99px;transition:width .6s ease;}
+.chart-val{font-size:12px;color:var(--muted);width:40px;font-family:var(--mono);}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+.empty{text-align:center;padding:48px 20px;color:var(--muted);}
+.empty-icon{font-size:40px;margin-bottom:12px;opacity:.4;}
+.empty h3{font-size:15px;color:var(--text);margin-bottom:6px;}
+#hamburger{display:none;background:none;border:none;color:var(--text);font-size:22px;cursor:pointer;}
+@media(max-width:700px){
+  #sidebar{position:fixed;left:0;top:0;bottom:0;transform:translateX(-100%);}
+  #sidebar.open{transform:translateX(0);}
+  #hamburger{display:block;}
+  .stats-grid{grid-template-columns:1fr 1fr;}
+  .grid2{grid-template-columns:1fr;}
+}
+/* Calendar */
+.cal-header{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-bottom:4px;}
+.cal-day-header{text-align:center;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;padding:4px 0;letter-spacing:.04em;}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;}
+.cal-day{min-height:90px;border:1px solid var(--border);border-radius:8px;padding:6px;background:var(--bg2);position:relative;transition:all .15s;}
+.cal-day.other-month{background:var(--bg3);opacity:.5;}
+.cal-day.today-cell{border-color:var(--accent);background:rgba(79,142,247,.03);}
+.cal-day.weekend-cell{background:#fafbff;}
+.cal-day-num{font-size:11px;font-weight:700;color:var(--muted);margin-bottom:4px;font-family:var(--mono);}
+.cal-day.today-cell .cal-day-num{color:var(--accent);}
+.cal-tags{display:flex;flex-direction:column;gap:2px;}
+.cal-tag{display:flex;align-items:center;justify-content:space-between;padding:2px 7px;border-radius:4px;font-size:11px;font-weight:600;color:#fff;cursor:grab;}
+.cal-tag:active{cursor:grabbing;opacity:.6;}
+.cal-remove{background:none;border:none;color:rgba(255,255,255,.6);cursor:pointer;font-size:10px;padding:0;line-height:1;margin-left:2px;}
+.cal-remove:hover{color:#fff;}
+.cal-add{width:100%;border:none;background:none;color:var(--muted);font-size:18px;cursor:pointer;padding:2px 0;line-height:1;opacity:0;transition:opacity .15s;}
+.cal-day:hover .cal-add{opacity:1;}
+.cal-day.drag-over{background:rgba(79,142,247,.08)!important;border-color:var(--accent);outline:2px dashed var(--accent);outline-offset:-2px;}
+.cal-day.drag-invalid{background:rgba(239,68,68,.06)!important;border-color:var(--red);outline:2px dashed var(--red);outline-offset:-2px;}
+/* Login */
+#login-screen{position:fixed;inset:0;background:linear-gradient(135deg,#0f172a,#1e1b4b,#0f172a);display:flex;align-items:center;justify-content:center;z-index:500;padding:20px;}
+.login-card{background:#fff;border-radius:20px;padding:36px;width:100%;max-width:380px;box-shadow:0 24px 64px rgba(0,0,0,.2);}
+.login-logo{width:52px;height:52px;background:var(--accent);border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:24px;margin:0 auto 16px;}
+.spinner{width:32px;height:32px;border:3px solid rgba(79,142,247,.2);border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg)}}
+.sched-layout{display:flex;gap:16px;align-items:flex-start;}
+.staff-panel{width:150px;flex-shrink:0;}
+.draggable-staff{display:flex;align-items:center;gap:8px;padding:7px 9px;border-radius:8px;cursor:grab;border:1px solid var(--border);background:var(--bg2);margin-bottom:6px;transition:all .15s;user-select:none;box-shadow:0 1px 3px rgba(0,0,0,.04);}
+.draggable-staff:hover{border-color:var(--accent);background:rgba(79,142,247,.05);}
+.draggable-staff:active{cursor:grabbing;opacity:.7;}
+.section-header{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;margin-bottom:10px;}
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="login-screen">
+  <div class="login-card">
+    <div class="login-logo">📞</div>
+    <h1 style="text-align:center;font-size:20px;font-weight:700;margin-bottom:4px">ShiftHub</h1>
+    <p style="text-align:center;font-size:13px;color:var(--muted);margin-bottom:24px">Çağrı Merkezi Vardiya Yönetimi</p>
+    <div id="login-error" style="display:none;background:#fef2f2;border:1px solid #fecaca;color:#dc2626;font-size:13px;padding:10px 12px;border-radius:8px;margin-bottom:16px"></div>
+    <div style="margin-bottom:14px">
+      <label class="lbl">E-posta</label>
+      <input class="input" id="login-email" type="email" placeholder="ad@sirket.com"/>
+    </div>
+    <div style="margin-bottom:20px">
+      <label class="lbl">Şifre</label>
+      <input class="input" id="login-password" type="password" placeholder="••••••••"/>
+    </div>
+    <button class="btn btn-primary" style="width:100%;justify-content:center;padding:10px" onclick="doLogin()">
+      <span id="login-btn-text">Giriş Yap</span>
+    </button>
+    <p style="text-align:center;font-size:12px;color:var(--muted);margin-top:16px">Hesabınız yoksa yöneticinizle iletişime geçin.</p>
+  </div>
+</div>
+
+<!-- SIDEBAR -->
+<aside id="sidebar">
+  <div class="logo">
+    <div class="logo-icon">📞</div>
+    <div><div class="logo-text">ShiftHub</div></div>
+  </div>
+  <nav id="nav">
+    <button class="nav-item active" data-page="dashboard" onclick="showPage('dashboard')"><span class="icon">🏠</span>Genel Bakış</button>
+    <button class="nav-item" data-page="calendar" onclick="showPage('calendar')"><span class="icon">📅</span>Takvim</button>
+    <button class="nav-item" data-page="leaves" onclick="showPage('leaves')"><span class="icon">🌴</span>İzinler</button>
+    <button class="nav-item" data-page="staff" onclick="showPage('staff')"><span class="icon">👥</span>Personel</button>
+    <button class="nav-item" data-page="reports" onclick="showPage('reports')"><span class="icon">📊</span>Raporlar</button>
+    <button class="nav-item" id="nav-users" data-page="users" onclick="showPage('users')" style="display:none"><span class="icon">🔑</span>Kullanıcılar</button>
+    <button class="nav-item" data-page="profile" onclick="showPage('profile')"><span class="icon">👤</span>Profilim</button>
+  </nav>
+  <div class="sidebar-user">
+    <div class="avatar" id="sb-avatar" style="width:32px;height:32px;font-size:13px;background:#e0e7ff;color:var(--accent)">?</div>
+    <div style="flex:1;min-width:0">
+      <div class="user-name" id="sb-name">—</div>
+      <div class="user-role" id="sb-role">—</div>
+    </div>
+    <button onclick="doLogout()" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:18px;padding:4px" title="Çıkış">⎋</button>
+  </div>
+</aside>
+
+<!-- MAIN -->
+<div id="main">
+  <div class="topbar">
+    <div style="display:flex;align-items:center;gap:12px">
+      <button id="hamburger" onclick="toggleSidebar()">☰</button>
+      <div class="page-title" id="page-title">Genel Bakış</div>
+    </div>
+    <div style="display:flex;gap:8px" id="topbar-actions"></div>
+  </div>
+  <div id="view-as-bar" style="display:none;background:#fef3c7;border-bottom:1px solid #fcd34d;padding:8px 24px;align-items:center;justify-content:space-between;gap:12px;flex-shrink:0">
+    <span style="font-size:13px;font-weight:500;color:#92400e">👁 <span id="view-as-name"></span></span>
+    <button onclick="setViewAs(null)" class="btn btn-ghost btn-sm" style="background:white">Kendi görünümüme dön</button>
+  </div>
+  <div class="content" id="content">
+
+    <!-- DASHBOARD -->
+    <div class="page active" id="page-dashboard">
+      <div class="stats-grid" id="dash-stats"></div>
+      <div class="grid2">
+        <div><div class="section-header">Bugünkü Vardiyalar</div><div class="card" id="dash-today"></div></div>
+        <div><div class="section-header">Son İzin Talepleri</div><div class="card" id="dash-leaves"></div></div>
+      </div>
+    </div>
+
+    <!-- CALENDAR -->
+    <div class="page" id="page-calendar">
+      <div class="card" style="margin-bottom:16px">
+        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
+          <div style="display:flex;align-items:center;gap:12px">
+            <button class="btn btn-ghost btn-sm" onclick="changeMonth(-1)">‹</button>
+            <span style="font-weight:700;font-size:15px" id="cal-label"></span>
+            <button class="btn btn-ghost btn-sm" onclick="changeMonth(1)">›</button>
+          </div>
+          <div style="display:flex;gap:8px" id="cal-actions"></div>
+        </div>
+      </div>
+      <div class="sched-layout">
+        <div class="staff-panel card" id="staff-panel" style="padding:12px;display:none">
+          <div class="section-header">Personel</div>
+          <div id="staff-drag-list"></div>
+        </div>
+        <div style="flex:1;min-width:0">
+          <div class="card" style="padding:12px">
+            <div class="cal-header" id="cal-header"></div>
+            <div class="cal-grid" id="cal-grid"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- LEAVES -->
+    <div class="page" id="page-leaves">
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:20px">
+        <div class="tabs" id="leaves-tabs"></div>
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-ghost btn-sm" onclick="printLeaves()">🖨️ PDF</button>
+          <button class="btn btn-primary btn-sm" onclick="openNewLeave()">+ Yeni Talep</button>
+        </div>
+      </div>
+      <div id="leaves-list" style="display:flex;flex-direction:column;gap:10px"></div>
+    </div>
+
+    <!-- STAFF -->
+    <div class="page" id="page-staff">
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:20px">
+        <input class="input" id="staff-search" placeholder="İsim veya e-posta ara..." style="max-width:280px" oninput="renderStaff()"/>
+        <button class="btn btn-primary btn-sm" id="btn-add-staff" style="display:none" onclick="openAddStaff()">+ Personel Ekle</button>
+      </div>
+      <div class="table-wrap">
+        <table><thead><tr>
+          <th>Personel</th><th>Rol</th><th>İşbaşı</th><th>İzin Bakiyesi</th><th>Durum</th><th id="staff-actions-th"></th>
+        </tr></thead><tbody id="staff-tbody"></tbody></table>
+      </div>
+    </div>
+
+    <!-- REPORTS -->
+    <div class="page" id="page-reports">
+      <div class="stats-grid" id="report-stats"></div>
+      <div class="grid2" style="margin-bottom:16px">
+        <div class="card"><div class="section-header" style="margin-bottom:14px">İzin Türü Dağılımı</div><div id="leave-type-chart"></div></div>
+        <div class="card"><div class="section-header" style="margin-bottom:14px">Fazla Mesai (Bu Yıl)</div><div id="overtime-chart"></div></div>
+      </div>
+      <div class="card">
+        <div class="section-header" style="margin-bottom:14px">İzin Bakiyeleri</div>
+        <div id="balance-table"></div>
+      </div>
+    </div>
+
+    <!-- USERS -->
+    <div class="page" id="page-users">
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:20px">
+        <h2 style="font-size:16px;font-weight:600;color:var(--text)">Admin ve Yöneticiler</h2>
+      </div>
+      <div class="table-wrap">
+        <table><thead><tr>
+          <th>Kullanıcı</th><th>Rol</th><th>Durum</th><th>İşlemler</th>
+        </tr></thead><tbody id="users-tbody"></tbody></table>
+      </div>
+    </div>
+
+    <!-- PROFILE -->
+    <div class="page" id="page-profile">
+      <div style="max-width:480px">
+        <div class="card" style="margin-bottom:16px">
+          <div class="section-header" style="margin-bottom:16px">Profil Bilgilerim</div>
+          <div id="profile-info"></div>
+        </div>
+        <div class="card">
+          <div class="section-header" style="margin-bottom:16px">Şifre Değiştir</div>
+          <div style="display:flex;flex-direction:column;gap:12px">
+            <div><label class="lbl">Mevcut Şifre</label><input class="input" type="password" id="pw-current" placeholder="••••••••"/></div>
+            <div><label class="lbl">Yeni Şifre</label><input class="input" type="password" id="pw-new" placeholder="En az 6 karakter"/></div>
+            <div><label class="lbl">Yeni Şifre (Tekrar)</label><input class="input" type="password" id="pw-confirm" placeholder="••••••••"/></div>
+            <div id="pw-error" style="display:none;background:#fef2f2;border:1px solid #fecaca;color:#dc2626;font-size:13px;padding:10px 12px;border-radius:8px"></div>
+            <div id="pw-success" style="display:none;background:#f0fdf4;border:1px solid #bbf7d0;color:#166534;font-size:13px;padding:10px 12px;border-radius:8px">Şifreniz başarıyla değiştirildi ✓</div>
+            <button class="btn btn-primary" onclick="changePassword()" style="align-self:flex-start">Şifreyi Güncelle</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<div id="toast-container"></div>
+<div id="modal-root"></div>
+
+<script>
+// ── Supabase ──────────────────────────────────────────────────────────────────
+// ── Supabase REST client (fetch-based) ───────────────────────────────────────
+const SUPA_URL = 'https://baltamasxaowjrqzlrwa.supabase.co';
+const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJhbHRhbWFzeGFvd2pycXpscndhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU3MjQwMzQsImV4cCI6MjA5MTMwMDAzNH0.jiv_Z4W05rK2CBngtbS19QBoRm-ivtHa9xOl2GeGyGI';
+let _authToken = null;
+
+function _headers(extra){
+  const h = {
+    'apikey': SUPA_KEY,
+    'Authorization': 'Bearer '+(_authToken||SUPA_KEY),
+    'Content-Type': 'application/json',
+    'Prefer': 'return=representation',
+  };
+  return Object.assign(h, extra||{});
+}
+
+async function _req(method, path, body, extra){
+  const res = await fetch(SUPA_URL+path, {
+    method, headers: _headers(extra),
+    body: body ? JSON.stringify(body) : undefined
+  });
+  const text = await res.text();
+  let data = null;
+  try { data = text ? JSON.parse(text) : null; } catch(e){}
+  if(!res.ok) return { data:null, error:{ message: (data?.message||data?.msg||res.statusText), code: data?.code||String(res.status) } };
+  return { data, error:null };
+}
+
+// Query builder
+function _q(table){
+  let _filters=[], _select='*', _order=null, _limit=null, _single=false;
+  const q = {
+    select(s){ _select=s; return q; },
+    eq(col,val){ _filters.push(col+'=eq.'+encodeURIComponent(val)); return q; },
+    neq(col,val){ _filters.push(col+'=neq.'+encodeURIComponent(val)); return q; },
+    in(col,arr){ _filters.push(col+'=in.('+arr.map(v=>encodeURIComponent(v)).join(',')+')'); return q; },
+    gte(col,val){ _filters.push(col+'=gte.'+encodeURIComponent(val)); return q; },
+    lte(col,val){ _filters.push(col+'=lte.'+encodeURIComponent(val)); return q; },
+    order(col,opts){ _order=col+(opts?.ascending===false?'.desc':'.asc'); return q; },
+    limit(n){ _limit=n; return q; },
+    single(){ _single=true; return q; },
+    async then(resolve, reject){
+      try {
+        let path = '/rest/v1/'+table+'?select='+encodeURIComponent(_select);
+        _filters.forEach(f=>{ path+='&'+f; });
+        if(_order) path+='&order='+_order;
+        if(_limit) path+='&limit='+_limit;
+        const extra = _single ? {'Accept':'application/vnd.pgrst.object+json'} : {};
+        const r = await _req('GET', path, null, extra);
+        resolve(_single ? {data:r.data, error:r.error} : {data:Array.isArray(r.data)?r.data:(r.data?[r.data]:[]), error:r.error, count:Array.isArray(r.data)?r.data.length:0});
+      } catch(e){ reject(e); }
+    }
+  };
+  return q;
+}
+
+const sb = {
+  from(table){
+    return {
+      select(s='*'){ return _q(table).select(s); },
+      async insert(body){
+        return _req('POST', '/rest/v1/'+table, Array.isArray(body)?body:[body]);
+      },
+      update(body){ 
+        return { 
+          eq(col,val){ return _req('PATCH', '/rest/v1/'+table+'?'+col+'=eq.'+encodeURIComponent(val), body); }
+        };
+      },
+      delete(){ 
+        return {
+          eq(col,val){ return _req('DELETE', '/rest/v1/'+table+'?'+col+'=eq.'+encodeURIComponent(val), null); }
+        };
+      },
+    };
+  },
+  auth: {
+    async getSession(){
+      const stored = sessionStorage.getItem('supa_session');
+      if(stored){
+        const s = JSON.parse(stored);
+        _authToken = s.access_token;
+        return { data:{ session:s } };
+      }
+      return { data:{ session:null } };
+    },
+    onAuthStateChange(cb){ 
+      window._authCb = cb;
+      return { data:{ subscription:{ unsubscribe(){} } } };
+    },
+    async signInWithPassword({ email, password }){
+      const r = await _req('POST', '/auth/v1/token?grant_type=password', { email, password });
+      if(r.error) return { error:r.error };
+      _authToken = r.data.access_token;
+      sessionStorage.setItem('supa_session', JSON.stringify(r.data));
+      if(window._authCb) window._authCb('SIGNED_IN', r.data);
+      return { data:r.data, error:null };
+    },
+    async signOut(){
+      await _req('POST', '/auth/v1/logout', {});
+      _authToken = null;
+      sessionStorage.removeItem('supa_session');
+      if(window._authCb) window._authCb('SIGNED_OUT', null);
+    },
+  }
+};
+
+// ── State ─────────────────────────────────────────────────────────────────────
+let currentUser = null;
+let currentProfile = null;
+let allStaff = [];
+let allShifts = [];
+let monthAssignments = [];
+let allYearAssignments = [];
+let allLeaves = [];
+let leaveBalances = [];
+let monthOffset = 0;
+let leavesTab = 'all';
+let dndState = { profileId:'', assignId:'', type:'' };
+let viewAsProfile = null;
+let dropLock = false; // admin/supervisor viewing as an agent
+
+const MONTHS = ['Ocak','Şubat','Mart','Nisan','Mayıs','Haziran','Temmuz','Ağustos','Eylül','Ekim','Kasım','Aralık'];
+const DAYS   = ['Pzt','Sal','Çar','Per','Cum','Cmt','Paz'];
+const LEAVE_TYPES = { annual:'Yıllık İzin', unpaid:'Ücretsiz İzin', report:'Rapor', other:'Diğer', hourly:'Saatlik İzin' };
+const ROLE_LABELS = { admin:'Admin', supervisor:'Yönetici', agent:'Temsilci' };
+const ROLE_BADGE  = { admin:'badge-purple', supervisor:'badge-blue', agent:'badge-green' };
+
+// ── Utils ─────────────────────────────────────────────────────────────────────
+const uid = () => Math.random().toString(36).slice(2,9);
+const todayStr = () => new Date().toISOString().split('T')[0];
+const initials = n => (n||'?').split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2);
+const fmtDate  = ds => { const d=new Date(ds+'T12:00:00'); return d.getDate()+' '+MONTHS[d.getMonth()]+' '+d.getFullYear(); };
+const fmtShort = ds => { const d=new Date(ds+'T12:00:00'); return d.getDate()+' '+MONTHS[d.getMonth()]; };
+const addDaysStr = (ds,n) => { const d=new Date(ds+'T12:00:00'); d.setDate(d.getDate()+n); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); };
+
+function isAdmin(){ return currentProfile?.role==='admin'; }
+function isSupervisor(){ return currentProfile?.role==='admin'||currentProfile?.role==='supervisor'; }
+function effectiveProfile(){ return viewAsProfile || currentProfile; }
+function isViewingAs(){ return viewAsProfile !== null; }
+function viewingAsId(){ return viewAsProfile?.id || currentProfile?.id; }
+
+function setViewAs(profile){
+  viewAsProfile = profile;
+  if(profile){
+    document.getElementById('view-as-bar').style.display='flex';
+    document.getElementById('view-as-name').textContent = profile.full_name + ' gözünden bakıyorsunuz';
+  } else {
+    document.getElementById('view-as-bar').style.display='none';
+  }
+  // Re-render current page
+  const activePage = document.querySelector('.nav-item.active')?.dataset?.page;
+  if(activePage) showPage(activePage);
+}
+
+function toast(msg,type='success'){
+  const icons={success:'✅',error:'❌',info:'ℹ️'};
+  const el=document.createElement('div');
+  el.className='toast '+type;
+  el.innerHTML='<span>'+(icons[type]||'•')+'</span><span style="flex:1">'+msg+'</span>';
+  document.getElementById('toast-container').appendChild(el);
+  setTimeout(()=>el.remove(), type==='error'?6000:3000);
+}
+function showModal(html){ document.getElementById('modal-root').innerHTML='<div class="modal-overlay" onclick="if(event.target===this)closeModal()">'+html+'</div>'; }
+function closeModal(){ document.getElementById('modal-root').innerHTML=''; }
+function toggleSidebar(){ document.getElementById('sidebar').classList.toggle('open'); }
+function closeSidebar(){ document.getElementById('sidebar').classList.remove('open'); }
+
+// ── Labor Law ─────────────────────────────────────────────────────────────────
+function shiftHours(sh){
+  if(!sh)return 0;
+  const [h1,m1]=sh.start_time.split(':').map(Number);
+  const [h2,m2]=sh.end_time.split(':').map(Number);
+  let s=h1*60+m1, e=h2*60+m2;
+  if(e<=s)e+=1440;
+  return(e-s-(sh.break_minutes||0))/60;
+}
+function weekMon(ds){
+  const d=new Date(ds+'T12:00:00');
+  const dow=d.getDay();
+  const diff=dow===0?-6:1-dow;
+  d.setDate(d.getDate()+diff);
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+}
+function weeklyHrs(assignments,profileId,date){
+  const mon=weekMon(date), sun=addDaysStr(mon,6);
+  return assignments.filter(a=>a.profile_id===profileId&&a.date>=mon&&a.date<=sun)
+    .reduce((acc,a)=>{ const sh=allShifts.find(s=>s.id===a.shift_id); return acc+shiftHours(sh); },0);
+}
+function yearlyOT(profileId){
+  const yr=new Date().getFullYear();
+  const ys=yr+'-01-01', ye=yr+'-12-31';
+  const wm={};
+  allYearAssignments.filter(a=>a.profile_id===profileId&&a.date>=ys&&a.date<=ye)
+    .forEach(a=>{ const mon=weekMon(a.date); if(!wm[mon])wm[mon]=0; const sh=allShifts.find(s=>s.id===a.shift_id); wm[mon]+=shiftHours(sh); });
+  return Object.values(wm).reduce((a,wh)=>a+Math.max(0,wh-45),0);
+}
+function consecBlock(assignments,profileId,targetDate){
+  const occ={};
+  assignments.filter(a=>a.profile_id===profileId&&a.date!==targetDate).forEach(a=>{ occ[a.date]=true; });
+  let back=0, cur=addDaysStr(targetDate,-1);
+  for(let i=0;i<365;i++){ if(occ[cur]){back++;cur=addDaysStr(cur,-1);}else break; }
+  let fwd=0; cur=addDaysStr(targetDate,1);
+  for(let i=0;i<365;i++){ if(occ[cur]){fwd++;cur=addDaysStr(cur,1);}else break; }
+  return back+1+fwd;
+}
+function checkRules(shiftId,date,profileId,excludeAssignId){
+  const sh=allShifts.find(s=>s.id===shiftId);
+  if(!sh)return{ok:false,msg:'Vardiya bulunamadı'};
+  const daily=shiftHours(sh);
+  if(daily>11)return{ok:false,msg:'Günlük 11 saat sınırı aşılıyor (İş Kanunu Md. 63)'};
+  const asgns=excludeAssignId?allYearAssignments.filter(a=>a.id!==excludeAssignId):allYearAssignments;
+  const block=consecBlock(asgns,profileId,date);
+  if(block>6)return{ok:false,msg:'Bu atama '+block+' gün üst üste çalışmaya yol açar. Maks. 6 gün (İş Kanunu Md. 46)'};
+  const curWH=weeklyHrs(asgns,profileId,date);
+  const newWH=curWH+daily;
+  if(newWH>45){
+    const addedOT=newWH-45;
+    const totalOT=yearlyOT(profileId)+addedOT;
+    if(totalOT>270)return{ok:false,msg:'Yıllık 270 saat fazla mesai limiti aşılıyor (İş Kanunu Md. 41)'};
+  }
+  return{ok:true,overtime:Math.max(0,newWH-45),weeklyTotal:newWH};
+}
+
+// ── Auth ──────────────────────────────────────────────────────────────────────
+async function init(){
+  const { data:{ session } } = await sb.auth.getSession();
+  if(session && session.user){ 
+    await onLogin(session.user); 
+  } else {
+    document.getElementById('login-screen').style.display='flex';
+  }
+  sb.auth.onAuthStateChange(async(event, session)=>{
+    if(event==='SIGNED_IN' && session){ 
+      const user = session.user || { id: session.user_id||session.sub, email: session.email };
+      await onLogin(user); 
+    } else if(event==='SIGNED_OUT'){ 
+      currentUser=null; currentProfile=null; 
+      document.getElementById('login-screen').style.display='flex'; 
+    }
+  });
+}
+async function onLogin(user){
+  currentUser=user;
+  // user might be the full session object from our custom auth
+  if(!user.id && user.user_id) user = {...user, id: user.user_id};
+  if(!user.id && user.sub) user = {...user, id: user.sub};
+  currentUser=user;
+  const { data } = await sb.from('profiles').select('*').eq('id',user.id).single();
+  currentProfile=data;
+  document.getElementById('login-screen').style.display='none';
+  document.getElementById('sb-name').textContent=data?.full_name||user.email;
+  document.getElementById('sb-role').textContent=ROLE_LABELS[data?.role]||'—';
+  document.getElementById('sb-avatar').textContent=initials(data?.full_name||user.email);
+  if(isSupervisor()) document.getElementById('btn-add-staff').style.display='';
+  if(isSupervisor()) document.getElementById('staff-actions-th').textContent='İşlemler';
+  document.getElementById('staff-panel').style.display=isSupervisor()?'':'none';
+  if(isAdmin()) document.getElementById('nav-users').style.display='';
+  await loadBaseData();
+  showPage('dashboard');
+}
+async function doLogin(){
+  const email=document.getElementById('login-email').value.trim();
+  const password=document.getElementById('login-password').value;
+  const btn=document.getElementById('login-btn-text');
+  const errEl=document.getElementById('login-error');
+  errEl.style.display='none'; btn.textContent='Giriş yapılıyor...';
+  const { data, error } = await sb.auth.signInWithPassword({ email, password });
+  btn.textContent='Giriş Yap';
+  if(error){ errEl.textContent='E-posta veya şifre hatalı.'; errEl.style.display='block'; }
+  else if(data && data.user){ await onLogin(data.user); }
+}
+async function doLogout(){ await sb.auth.signOut(); }
+
+// ── Load data ─────────────────────────────────────────────────────────────────
+async function loadBaseData(){
+  const [{ data:shifts },{ data:staff }] = await Promise.all([
+    sb.from('shifts').select('*').eq('is_active',true),
+    sb.from('profiles').select('*').eq('is_active',true).eq('role','agent').order('full_name'),
+  ]);
+  allShifts=shifts||[];
+  allStaff=staff||[];
+  await loadYearAssignments();
+  await loadLeaveBalances();
+}
+async function loadYearAssignments(){
+  const yr=new Date().getFullYear();
+  const { data } = await sb.from('assignments').select('*').gte('date',yr+'-01-01').lte('date',yr+'-12-31');
+  allYearAssignments=data||[];
+}
+async function loadLeaveBalances(){
+  const { data } = await sb.from('leave_balances').select('*');
+  // Only agents
+  const agentIds=new Set(allStaff.map(s=>s.id));
+  leaveBalances=(data||[]).filter(b=>agentIds.has(b.profile_id));
+}
+async function loadMonthAssignments(){
+  const now=new Date();
+  const yr=now.getFullYear()+Math.floor((now.getMonth()+monthOffset)/12);
+  const mo=((now.getMonth()+monthOffset)%12+12)%12;
+  const ys=yr+'-'+String(mo+1).padStart(2,'0')+'-01';
+  const ye=yr+'-'+String(mo+1).padStart(2,'0')+'-'+new Date(yr,mo+1,0).getDate();
+  const { data } = await sb.from('assignments').select('*').gte('date',ys).lte('date',ye).order('date');
+  // Attach profile and shift info
+  const profileMap={};
+  allStaff.forEach(s=>{ profileMap[s.id]=s; });
+  const shiftMap={};
+  allShifts.forEach(s=>{ shiftMap[s.id]=s; });
+  monthAssignments=(data||[]).map(a=>({
+    ...a,
+    profile: profileMap[a.profile_id]||null,
+    shift: shiftMap[a.shift_id]||null,
+  }));
+}
+async function loadLeaves(){
+  let q=sb.from('leave_requests').select('*').order('created_at',{ascending:false});
+  if(isViewingAs()) q=q.eq('profile_id',viewingAsId());
+  else if(!isSupervisor()) q=q.eq('profile_id',currentUser.id);
+  else if(leavesTab==='pending') q=q.eq('status','pending');
+  else if(leavesTab==='mine') q=q.eq('profile_id',currentUser.id);
+  const { data } = await q;
+  // Attach profile info from allStaff + admin users
+  const { data: allProfiles } = await sb.from('profiles').select('id,full_name,email');
+  const profileMap={};
+  (allProfiles||[]).forEach(p=>{ profileMap[p.id]=p; });
+  allLeaves=(data||[]).map(l=>({
+    ...l,
+    profile: profileMap[l.profile_id]||null,
+    reviewer: l.reviewed_by ? profileMap[l.reviewed_by]||null : null,
+  }));
+}
+
+// ── Navigation ────────────────────────────────────────────────────────────────
+const PAGE_TITLES={ dashboard:'Genel Bakış', calendar:'Vardiya Takvimi', leaves:'İzin Yönetimi', staff:'Personel', reports:'Raporlar', users:'Kullanıcılar', profile:'Profilim' };
+function showPage(id){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  document.getElementById('page-'+id).classList.add('active');
+  document.querySelector('[data-page="'+id+'"]').classList.add('active');
+  document.getElementById('page-title').textContent=PAGE_TITLES[id]||id;
+  closeSidebar();
+  if(id==='dashboard')renderDashboard();
+  else if(id==='calendar'){loadMonthAssignments().then(renderCalendar);}
+  else if(id==='leaves'){loadLeaves().then(renderLeaves);}
+  else if(id==='staff')renderStaff();
+  else if(id==='reports')renderReports();
+  else if(id==='users')renderUsers();
+  else if(id==='profile')renderProfile();
+}
+
+// ── Dashboard ─────────────────────────────────────────────────────────────────
+async function renderDashboard(){
+  const today=todayStr();
+  const uid_ = viewingAsId();
+  const isViewAs = isViewingAs();
+  const [{ data:todayA },{ data:recentL },{ data:pendingData },{ data:staffData }] = await Promise.all([
+    isViewAs
+      ? sb.from('assignments').select('*').eq('date',today).eq('profile_id',uid_)
+      : sb.from('assignments').select('*').eq('date',today),
+    sb.from('leave_requests').select('*').order('created_at',{ascending:false}).limit(5),
+    sb.from('leave_requests').select('id').eq('status','pending'),
+    sb.from('profiles').select('id').eq('is_active',true).eq('role','agent'),
+  ]);
+  const stats=[
+    {label:'Aktif Personel',val:(staffData||[]).length,icon:'👥',color:'#4f8ef7'},
+    {label:'Bugünkü Vardiya',val:(todayA||[]).length,icon:'📅',color:'#10b981'},
+    {label:'Bekleyen İzin',val:(pendingData||[]).length,icon:'🌴',color:'#f59e0b'},
+    {label:'Toplam Atama',val:allYearAssignments.length,icon:'📋',color:'#8b5cf6'},
+  ];
+  document.getElementById('dash-stats').innerHTML=stats.map(s=>`<div class="stat-card" style="--accent-color:${s.color}"><div style="font-size:24px;position:absolute;right:16px;top:16px;opacity:.25">${s.icon}</div><div class="stat-value">${s.val}</div><div class="stat-label">${s.label}</div></div>`).join('');
+  const profMap={};allStaff.forEach(s=>{profMap[s.id]=s;});
+  const shMap={};allShifts.forEach(s=>{shMap[s.id]=s;});
+  const todEl=document.getElementById('dash-today');
+  todEl.innerHTML=(todayA||[]).length===0?'<div class="empty"><div class="empty-icon">📅</div><p>Bugün için atama yok</p></div>':
+    (todayA||[]).map(a=>{const p=profMap[a.profile_id];const sh=shMap[a.shift_id];return`<div class="person-row"><div class="avatar" style="width:32px;height:32px;font-size:12px;background:#e0e7ff;color:var(--accent)">${initials(p?.full_name||'?')}</div><div style="flex:1"><div style="font-weight:600;font-size:13px">${p?.full_name||'—'}</div><div style="font-size:11px;color:var(--muted)">${sh?.name||''}</div></div><span class="badge badge-blue">${(sh?.start_time||'').slice(0,5)}–${(sh?.end_time||'').slice(0,5)}</span></div>`;}).join('');
+  const lvEl=document.getElementById('dash-leaves');
+  const statusCls={pending:'badge-amber',approved:'badge-green',rejected:'badge-red',cancelled:'badge-gray'};
+  const statusLbl={pending:'Bekliyor',approved:'Onaylandı',rejected:'Reddedildi',cancelled:'İptal'};
+  lvEl.innerHTML=(recentL||[]).length===0?'<div class="empty"><div class="empty-icon">🌴</div><p>İzin talebi yok</p></div>':
+    (recentL||[]).map(l=>{const p=profMap[l.profile_id];return`<div class="person-row"><div class="avatar" style="width:32px;height:32px;font-size:12px;background:#e0e7ff;color:var(--accent)">${initials(p?.full_name||'?')}</div><div style="flex:1"><div style="font-weight:600;font-size:13px">${p?.full_name||'—'}</div><div style="font-size:11px;color:var(--muted)">${fmtShort(l.start_date)} – ${fmtShort(l.end_date)}</div></div><span class="badge ${statusCls[l.status]||'badge-gray'}">${statusLbl[l.status]||l.status}</span></div>`;}).join('');
+}
+
+// ── Calendar ──────────────────────────────────────────────────────────────────
+function changeMonth(dir){ monthOffset+=dir; loadMonthAssignments().then(renderCalendar); }
+
+function renderCalendar(){
+  const now=new Date();
+  const yr=now.getFullYear()+Math.floor((now.getMonth()+monthOffset)/12);
+  const mo=((now.getMonth()+monthOffset)%12+12)%12;
+  const today=todayStr();
+  const shift=allShifts[0];
+
+  document.getElementById('cal-label').textContent=MONTHS[mo]+' '+yr;
+
+  // Actions
+  const actEl=document.getElementById('cal-actions');
+  actEl.innerHTML=isSupervisor()&&!isViewingAs()?'<button class="btn btn-ghost btn-sm" onclick="autoAssign()">⚡ Otomatik Ata</button><button class="btn btn-ghost btn-sm" onclick="printSchedule()">🖨️ PDF</button>':'';
+
+  // Staff panel
+  if(isSupervisor()&&!isViewingAs()){
+    document.getElementById('staff-panel').style.display='';
+    document.getElementById('staff-drag-list').innerHTML=allStaff.map(s=>`
+      <div class="draggable-staff" draggable="true" data-profileid="${s.id}">
+        <div class="avatar" style="width:24px;height:24px;font-size:11px;background:#e0e7ff;color:var(--accent);flex-shrink:0">${initials(s.full_name)}</div>
+        <span style="font-size:12px;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${s.full_name.split(' ')[0]}</span>
+      </div>`).join('');
+    document.querySelectorAll('.draggable-staff').forEach(el=>{
+      el.addEventListener('dragstart',e=>{
+        dndState={profileId:el.dataset.profileid,assignId:'',type:'staff'};
+        e.dataTransfer.setData('text/plain', el.dataset.profileid);
+        e.dataTransfer.effectAllowed='copy';
+      });
+    });
+  } else {
+    document.getElementById('staff-panel').style.display='none';
+  }
+
+  // Header
+  document.getElementById('cal-header').innerHTML=DAYS.map(d=>`<div class="cal-day-header">${d}</div>`).join('');
+
+  // Build grid HTML
+  const firstDay=new Date(yr,mo,1);
+  const lastDay=new Date(yr,mo+1,0);
+  let offset=firstDay.getDay()-1; if(offset<0)offset=6;
+  const prevLast=new Date(yr,mo,0).getDate();
+
+  let html='';
+  for(let i=0;i<offset;i++) html+=`<div class="cal-day other-month"><div class="cal-day-num">${prevLast-offset+1+i}</div></div>`;
+
+  for(let d=1;d<=lastDay.getDate();d++){
+    const ds=yr+'-'+String(mo+1).padStart(2,'0')+'-'+String(d).padStart(2,'0');
+    const dow=(new Date(yr,mo,d)).getDay();
+    const isToday=ds===today;
+    const isWeekend=dow===0||dow===6;
+    let cls='cal-day';
+    if(isToday)cls+=' today-cell';
+    if(isWeekend)cls+=' weekend-cell';
+    const cellA=monthAssignments.filter(a=>a.date===ds&&(!shift||a.shift_id===shift.id));
+    html+=`<div class="${cls}" data-date="${ds}" data-shiftid="${shift?.id||''}">
+      <div class="cal-day-num">${d}</div>
+      <div class="cal-tags">
+        ${cellA.map(a=>`<div class="cal-tag" draggable="${isSupervisor()&&!isViewingAs()}" data-assignid="${a.id}" data-profileid="${a.profile_id}" style="background:${shift?.color||'#4f8ef7'}">
+          <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:70px">${a.profile?.full_name?.split(' ')[0]||'?'}</span>
+          ${isSupervisor()&&!isViewingAs()?`<button class="cal-remove" onclick="event.stopPropagation();removeAssignment('${a.id}')">✕</button>`:''}
+        </div>`).join('')}
+      </div>
+      ${isSupervisor()&&!isViewingAs()?`<button class="cal-add" onclick="openAssignModal('${shift?.id||''}','${ds}')">+</button>`:''}
+    </div>`;
+  }
+
+  const total=offset+lastDay.getDate();
+  const rem=total%7;
+  if(rem!==0) for(let i=1;i<=7-rem;i++) html+=`<div class="cal-day other-month"><div class="cal-day-num">${i}</div></div>`;
+
+  document.getElementById('cal-grid').innerHTML=html;
+
+  // Attach drag-drop listeners directly to each element
+  if(isSupervisor()&&!isViewingAs()){
+    // Assignment tag dragstart
+    document.querySelectorAll('.cal-tag[draggable="true"]').forEach(el=>{
+      el.addEventListener('dragstart',e=>{
+        e.stopPropagation();
+        dndState={profileId:el.dataset.profileid,assignId:el.dataset.assignid,type:'assignment'};
+        e.dataTransfer.setData('text/plain', el.dataset.profileid);
+        e.dataTransfer.effectAllowed='move';
+        setTimeout(()=>el.style.opacity='0.5',0);
+      });
+      el.addEventListener('dragend',()=>el.style.opacity='');
+    });
+
+    // Drop zone listeners on each cal-day
+    document.querySelectorAll('.cal-day[data-date]').forEach(cell=>{
+      cell.addEventListener('dragover',e=>{
+        e.preventDefault();
+        e.stopPropagation();
+        document.querySelectorAll('.cal-day').forEach(c=>c.classList.remove('drag-over','drag-invalid'));
+        const pid=dndState.profileId;
+        if(!pid) return;
+        const shiftId=cell.dataset.shiftid;
+        const date=cell.dataset.date;
+        const alreadyHere=monthAssignments.some(a=>a.profile_id===pid&&a.date===date&&(dndState.type==='staff'||a.id!==dndState.assignId));
+        if(alreadyHere){cell.classList.add('drag-invalid');return;}
+        const check=checkRules(shiftId,date,pid,dndState.assignId||null);
+        cell.classList.add(check.ok?'drag-over':'drag-invalid');
+        e.dataTransfer.dropEffect=check.ok?'copy':'none';
+      });
+
+      cell.addEventListener('dragleave',e=>{
+        if(!cell.contains(e.relatedTarget)){
+          cell.classList.remove('drag-over','drag-invalid');
+        }
+      });
+
+      cell.addEventListener('drop',async e=>{
+        e.preventDefault();
+        e.stopPropagation();
+        if(dropLock) return;
+        dropLock = true;
+        setTimeout(()=>dropLock=false, 1000);
+        document.querySelectorAll('.cal-day').forEach(c=>c.classList.remove('drag-over','drag-invalid'));
+
+        const shiftId=cell.dataset.shiftid;
+        const date=cell.dataset.date;
+        const pid=dndState.profileId;
+        const assignId=dndState.assignId;
+        const type=dndState.type;
+        dndState={profileId:'',assignId:'',type:''};
+
+        if(!pid||!date||!shiftId){dropLock=false;toast('Sürükleme hatası, tekrar deneyin','error');return;}
+
+        const alreadyHere=monthAssignments.some(a=>a.profile_id===pid&&a.date===date&&(type==='staff'||a.id!==assignId));
+        if(alreadyHere){toast('Bu personel zaten bu günde atanmış','info');return;}
+
+        const check=checkRules(shiftId,date,pid,assignId||null);
+        if(!check.ok){toast('⛔ '+check.msg,'error');return;}
+
+        if(type==='assignment'&&assignId){
+          const {error}=await sb.from('assignments').update({date,shift_id:shiftId}).eq('id',assignId);
+          if(error){toast('Hata: '+error.message,'error');return;}
+        } else {
+          const {error}=await sb.from('assignments').insert({profile_id:pid,shift_id:shiftId,date,created_by:currentUser.id});
+          if(error){
+            if(error.code==='23505')toast('Bu personel zaten bu günde atanmış','info');
+            else toast('Hata: '+error.message,'error');
+            return;
+          }
+        }
+
+        await loadYearAssignments();
+        await loadMonthAssignments();
+        renderCalendar();
+        dropLock=false;
+        const p=allStaff.find(s=>s.id===pid);
+        if(check.overtime>0) toast('⚠️ Atandı — bu hafta '+check.weeklyTotal.toFixed(1)+' saat (fazla mesai)','info');
+        else toast((p?.full_name.split(' ')[0]||'Personel')+' → '+fmtShort(date)+' ✓');
+      });
+    });
+  }
+}
+
+
+async function removeAssignment(id){
+  await sb.from('assignments').delete().eq('id',id);
+  await loadYearAssignments();
+  await loadMonthAssignments();
+  renderCalendar();
+  toast('Atama kaldırıldı','info');
+}
+
+function openAssignModal(shiftId,date){
+  const already=monthAssignments.filter(a=>a.date===date).map(a=>a.profile_id);
+  const available=allStaff.filter(s=>!already.includes(s.id));
+  if(available.length===0){toast('Atanabilecek personel kalmadı','info');return;}
+  const rows=available.map(s=>{
+    const check=checkRules(shiftId,date,s.id,null);
+    const wh=weeklyHrs(allYearAssignments,s.id,date);
+    const sh=allShifts.find(x=>x.id===shiftId);
+    const newWh=wh+(sh?shiftHours(sh):0);
+    let statusHtml='';
+    if(!check.ok) statusHtml=`<div style="font-size:10px;color:var(--red);margin-top:2px">⛔ ${check.msg.split('(')[0].trim()}</div>`;
+    else if(newWh>45) statusHtml=`<div style="font-size:10px;color:var(--amber);margin-top:2px">⚠️ Fazla mesai: ${newWh.toFixed(1)} saat/hafta</div>`;
+    else statusHtml=`<div style="font-size:10px;color:var(--muted);margin-top:2px">Bu hafta: ${wh.toFixed(1)} → ${newWh.toFixed(1)} saat</div>`;
+    const disabled=!check.ok;
+    return `<div class="assign-row" data-sid="${s.id}" data-blocked="${disabled?'1':'0'}" style="display:flex;align-items:center;gap:10px;padding:10px 8px;border-radius:8px;${disabled?'opacity:.45;cursor:not-allowed':'cursor:pointer'}">
+      <div class="avatar" style="width:32px;height:32px;font-size:12px;background:#e0e7ff;color:var(--accent)">${initials(s.full_name)}</div>
+      <div style="flex:1;min-width:0"><div style="font-weight:600;font-size:13px">${s.full_name}</div>${statusHtml}</div>
+      ${disabled?'<span>⛔</span>':newWh>45?'<span>⚠️</span>':''}
+    </div>`;
+  }).join('');
+  showModal(`<div class="modal"><div class="modal-header"><div class="modal-title">Personel Ata</div><button class="btn-close" onclick="closeModal()">×</button></div><div class="modal-body" style="max-height:360px;overflow-y:auto;padding:8px" id="assign-list">${rows}</div></div>`);
+  setTimeout(()=>{
+    document.querySelectorAll('#assign-list .assign-row').forEach(el=>{
+      if(el.dataset.blocked==='1')return;
+      el.addEventListener('mouseenter',()=>el.style.backgroundColor='var(--bg3)');
+      el.addEventListener('mouseleave',()=>el.style.backgroundColor='');
+      el.addEventListener('click',()=>doAssign(shiftId,date,el.dataset.sid));
+    });
+  },50);
+}
+
+async function doAssign(shiftId,date,profileId){
+  const check=checkRules(shiftId,date,profileId,null);
+  if(!check.ok){toast('⛔ '+check.msg,'error');closeModal();return;}
+  const { error:insertErr } = await sb.from('assignments').insert({profile_id:profileId,shift_id:shiftId,date,created_by:currentUser.id});
+  if(insertErr){
+    if(insertErr.code==='23505') toast('Bu personel zaten bu günde atanmış','info');
+    else toast('Hata: '+insertErr.message,'error');
+    closeModal();
+    return;
+  }
+  await loadYearAssignments();
+  await loadMonthAssignments();
+  closeModal();
+  renderCalendar();
+  const p=allStaff.find(s=>s.id===profileId);
+  toast((p?.full_name.split(' ')[0]||'Personel')+' → '+fmtShort(date)+' ✓');
+}
+
+async function autoAssign(){
+  const shift=allShifts[0];
+  if(!shift||allStaff.length===0)return;
+  const now=new Date();
+  const yr=now.getFullYear()+Math.floor((now.getMonth()+monthOffset)/12);
+  const mo=((now.getMonth()+monthOffset)%12+12)%12;
+  const lastDay=new Date(yr,mo+1,0).getDate();
+  let added=0,blocked=0;
+  for(let d=1;d<=lastDay;d++){
+    const ds=yr+'-'+String(mo+1).padStart(2,'0')+'-'+String(d).padStart(2,'0');
+    for(const s of allStaff){
+      const already=monthAssignments.some(a=>a.profile_id===s.id&&a.date===ds);
+      if(already)continue;
+      const check=checkRules(shift.id,ds,s.id,null);
+      if(!check.ok){blocked++;continue;}
+      await sb.from('assignments').insert({profile_id:s.id,shift_id:shift.id,date:ds,created_by:currentUser.id});
+      added++;
+      break;
+    }
+  }
+  await loadYearAssignments();
+  await loadMonthAssignments();
+  renderCalendar();
+  toast(`${added} atama yapıldı${blocked>0?' · '+blocked+' kural ihlali atlandı':''}`,added>0?'success':'info');
+}
+
+function printSchedule(){
+  const now=new Date();
+  const yr=now.getFullYear()+Math.floor((now.getMonth()+monthOffset)/12);
+  const mo=((now.getMonth()+monthOffset)%12+12)%12;
+  const lastDay=new Date(yr,mo+1,0).getDate();
+  const DAYS2=['Paz','Pzt','Sal','Çar','Per','Cum','Cmt'];
+  let rows='';
+  for(let d=1;d<=lastDay;d++){
+    const ds=yr+'-'+String(mo+1).padStart(2,'0')+'-'+String(d).padStart(2,'0');
+    const dow=(new Date(yr,mo,d)).getDay();
+    const names=monthAssignments.filter(a=>a.date===ds).map(a=>a.profile?.full_name||'').join(', ')||'—';
+    const wknd=dow===0||dow===6;
+    rows+=`<tr style="${wknd?'background:#f8f9fb':''}"><td>${d}</td><td>${DAYS2[dow]}</td><td>${names}</td><td>${monthAssignments.filter(a=>a.date===ds).length}</td></tr>`;
+  }
+  const html=`<!DOCTYPE html><html lang="tr"><head><meta charset="UTF-8"/><title>${MONTHS[mo]} ${yr}</title><style>body{font-family:sans-serif;font-size:11px;padding:20px}h1{font-size:16px;font-weight:700;margin-bottom:14px}table{width:100%;border-collapse:collapse;border:1px solid #e2e8f0}th{background:#f8fafc;padding:9px 12px;text-align:left;font-size:10px;text-transform:uppercase;color:#64748b;border-bottom:1px solid #e2e8f0}td{padding:8px 12px;border-bottom:1px solid #f1f5f9}@media print{@page{size:A4;margin:10mm}}</style></head><body><h1>${MONTHS[mo]} ${yr} — Vardiya Takvimi</h1><table><thead><tr><th>Gün</th><th>Gün Adı</th><th>Personel</th><th>Kişi</th></tr></thead><tbody>${rows}</tbody></table><script>window.onload=()=>window.print()<\/script></body></html>`;
+  const w=window.open('','_blank');w.document.write(html);w.document.close();
+}
+
+// ── Leaves ────────────────────────────────────────────────────────────────────
+function workingDays(s,e){
+  let cnt=0,cur=new Date(s+'T12:00:00'),end=new Date(e+'T12:00:00');
+  while(cur<=end){const d=cur.getDay();if(d!==0&&d!==6)cnt++;cur.setDate(cur.getDate()+1);}
+  return cnt;
+}
+
+function renderLeaves(){
+  // Tabs
+  const tabs=isSupervisor()?[{k:'all',l:'Tümü'},{k:'pending',l:'Bekleyenler'},{k:'mine',l:'Benimkiler'}]:[{k:'mine',l:'Taleplerim'}];
+  document.getElementById('leaves-tabs').innerHTML=tabs.map(t=>`<button class="tab${leavesTab===t.k?' active':''}" onclick="setLeavesTab('${t.k}')">${t.l}</button>`).join('');
+  // List
+  const stCls={pending:'badge-amber',approved:'badge-green',rejected:'badge-red',cancelled:'badge-gray'};
+  const stLbl={pending:'Bekliyor',approved:'Onaylandı',rejected:'Reddedildi',cancelled:'İptal'};
+  const list=document.getElementById('leaves-list');
+  if(allLeaves.length===0){list.innerHTML='<div class="empty"><div class="empty-icon">🌴</div><h3>İzin talebi yok</h3></div>';return;}
+  list.innerHTML=allLeaves.map(l=>{
+    const days=l.leave_type==='hourly'?`${l.hours} saat`:`${workingDays(l.start_date,l.end_date)} iş günü`;
+    const isOwn=l.profile_id===currentUser?.id;
+    return`<div class="leave-card ${l.status}">
+      <div style="flex:1;min-width:0">
+        ${isSupervisor()?`<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px"><div class="avatar" style="width:28px;height:28px;font-size:11px;background:#e0e7ff;color:var(--accent)">${initials(l.profile?.full_name||'?')}</div><span style="font-weight:600;font-size:13px">${l.profile?.full_name||'—'}</span></div>`:''}
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+          <span style="font-weight:600">${LEAVE_TYPES[l.leave_type]||l.leave_type}</span>
+          <span style="color:var(--muted)">·</span>
+          <span style="font-size:12px;color:var(--muted)">${fmtShort(l.start_date)}${l.leave_type!=='hourly'?' – '+fmtShort(l.end_date):''}</span>
+          <span class="badge badge-gray">${days}</span>
+        </div>
+        ${l.reason?`<div style="font-size:12px;color:var(--muted);margin-top:4px">Açıklama: ${l.reason}</div>`:''}
+        ${l.review_note?`<div style="font-size:12px;color:var(--muted);margin-top:2px;font-style:italic">Not: ${l.review_note}</div>`:''}
+        <div style="font-size:11px;color:var(--muted);margin-top:4px">${new Date(l.created_at).toLocaleString('tr-TR')}</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;flex-shrink:0;flex-wrap:wrap">
+        <span class="badge ${stCls[l.status]||'badge-gray'}">${stLbl[l.status]||l.status}</span>
+        ${isSupervisor()&&l.status==='pending'?`<button class="btn btn-success btn-sm" onclick="reviewLeave('${l.id}','approved')">✓ Onayla</button><button class="btn btn-danger btn-sm" onclick="reviewLeave('${l.id}','rejected')">✕ Reddet</button>`:''}
+        ${isSupervisor()&&l.status==='approved'?`<button class="btn btn-danger btn-sm" onclick="deleteLeave('${l.id}')">🗑 Sil</button>`:''}
+        ${isOwn&&l.status==='pending'?`<button class="btn btn-ghost btn-sm" onclick="cancelLeave('${l.id}')">İptal Et</button>`:''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+async function setLeavesTab(t){ leavesTab=t; await loadLeaves(); renderLeaves(); }
+
+function openNewLeave(){
+  const staffOpts=isSupervisor()
+    ?allStaff.map(s=>`<option value="${s.id}">${s.name||s.full_name}</option>`).join('')
+    :`<option value="${currentUser.id}">${currentProfile?.full_name||''}</option>`;
+  showModal(`<div class="modal">
+    <div class="modal-header"><div class="modal-title">Yeni İzin Talebi</div><button class="btn-close" onclick="closeModal()">×</button></div>
+    <div class="modal-body">
+      ${isSupervisor()?`<div><label class="lbl">Personel</label><select class="select" id="lf-staff">${allStaff.map(s=>`<option value="${s.id}">${s.full_name}</option>`).join('')}</select></div>`:''}
+      <div><label class="lbl">İzin Türü</label><select class="select" id="lf-type" onchange="toggleHourly()">${Object.entries(LEAVE_TYPES).map(([k,v])=>`<option value="${k}">${v}</option>`).join('')}</select></div>
+      <div id="lf-date-range" style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div><label class="lbl">Başlangıç</label><input class="input" id="lf-start" type="date" value="${todayStr()}"/></div>
+        <div><label class="lbl">Bitiş</label><input class="input" id="lf-end" type="date" value="${todayStr()}"/></div>
+      </div>
+      <div id="lf-hourly-row" style="display:none">
+        <div><label class="lbl">Tarih</label><input class="input" id="lf-hdate" type="date" value="${todayStr()}"/></div>
+        <div style="margin-top:12px"><label class="lbl">Kaç Saat?</label><input class="input" id="lf-hours" type="number" min="0.5" max="9" step="0.5" placeholder="ör. 2"/></div>
+      </div>
+      <div><label class="lbl">Açıklama <span id="lf-req" style="color:var(--red);display:none">*zorunlu</span></label><textarea class="input" id="lf-reason" rows="2" placeholder="İsteğe bağlı..."></textarea></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal()">İptal</button>
+      <button class="btn btn-primary" onclick="submitLeave()">Talep Gönder</button>
+    </div>
+  </div>`);
+}
+function toggleHourly(){
+  const t=document.getElementById('lf-type')?.value;
+  const isH=t==='hourly';
+  document.getElementById('lf-date-range').style.display=isH?'none':'grid';
+  document.getElementById('lf-hourly-row').style.display=isH?'block':'none';
+  document.getElementById('lf-req').style.display=t==='other'?'inline':'none';
+}
+async function submitLeave(){
+  const type=document.getElementById('lf-type').value;
+  const reason=document.getElementById('lf-reason').value.trim();
+  if(type==='other'&&!reason){toast('Diğer izin türü için açıklama zorunludur','error');return;}
+  let start,end,hours=null;
+  if(type==='hourly'){
+    start=end=document.getElementById('lf-hdate').value;
+    hours=parseFloat(document.getElementById('lf-hours').value);
+    if(!hours){toast('Saat giriniz','error');return;}
+  } else {
+    start=document.getElementById('lf-start').value;
+    end=document.getElementById('lf-end').value;
+    if(start>end){toast('Tarihler hatalı','error');return;}
+  }
+  const profileId=isSupervisor()?document.getElementById('lf-staff')?.value||currentUser.id:currentUser.id;
+  await sb.from('leave_requests').insert({profile_id:profileId,leave_type:type,start_date:start,end_date:end,hours,reason:reason||null});
+  closeModal();
+  await loadLeaves();
+  renderLeaves();
+  toast('İzin talebi gönderildi ✓');
+}
+async function reviewLeave(id,status){
+  const note=status==='rejected'?prompt('Red sebebi (isteğe bağlı):'):null;
+  await sb.from('leave_requests').update({status,review_note:note||null,reviewed_by:currentUser.id,reviewed_at:new Date().toISOString()}).eq('id',id);
+  await loadLeaves(); renderLeaves();
+  toast(status==='approved'?'İzin onaylandı ✓':'İzin reddedildi','info');
+  await loadLeaveBalances();
+}
+async function cancelLeave(id){
+  await sb.from('leave_requests').update({status:'cancelled'}).eq('id',id);
+  await loadLeaves(); renderLeaves(); toast('İptal edildi','info');
+}
+async function deleteLeave(id){
+  if(!confirm('Bu onaylı izni silmek istiyor musunuz? Bakiyeye geri eklenecektir.'))return;
+  await sb.from('leave_requests').delete().eq('id',id);
+  await loadLeaves(); renderLeaves(); await loadLeaveBalances();
+  toast('Silindi','info');
+}
+function printLeaves(){
+  const stLbl={pending:'Bekliyor',approved:'Onaylandı',rejected:'Reddedildi',cancelled:'İptal'};
+  const rows=allLeaves.map(l=>{
+    const days=l.leave_type==='hourly'?`${l.hours} saat`:`${workingDays(l.start_date,l.end_date)} iş günü`;
+    const pname=l.profile?.full_name||allStaff.find(s=>s.id===l.profile_id)?.full_name||'—';
+    return`<tr><td>${pname}</td><td>${LEAVE_TYPES[l.leave_type]||l.leave_type}</td><td>${fmtDate(l.start_date)}</td><td>${fmtDate(l.end_date)}</td><td>${days}</td><td>${stLbl[l.status]||l.status}</td></tr>`;
+  }).join('');
+  const html=`<!DOCTYPE html><html lang="tr"><head><meta charset="UTF-8"/><title>İzin Raporu</title><style>body{font-family:sans-serif;font-size:11px;padding:20px}h1{font-size:16px;font-weight:700;margin-bottom:14px}table{width:100%;border-collapse:collapse;border:1px solid #e2e8f0}th{background:#f8fafc;padding:9px 12px;text-align:left;font-size:10px;text-transform:uppercase;color:#64748b;border-bottom:1px solid #e2e8f0}td{padding:8px 12px;border-bottom:1px solid #f1f5f9}@media print{@page{size:A4;margin:10mm}}</style></head><body><h1>İzin Raporu — ${new Date().toLocaleDateString('tr-TR')}</h1><table><thead><tr><th>Personel</th><th>Tür</th><th>Başlangıç</th><th>Bitiş</th><th>Süre</th><th>Durum</th></tr></thead><tbody>${rows}</tbody></table><script>window.onload=()=>window.print()<\/script></body></html>`;
+  const w=window.open('','_blank');w.document.write(html);w.document.close();
+}
+
+// ── Staff ─────────────────────────────────────────────────────────────────────
+async function renderStaff(){
+  const q=document.getElementById('staff-search').value.toLowerCase();
+  let list;
+  if(isSupervisor()){
+    const { data } = await sb.from('profiles').select('*').eq('role','agent').order('full_name');
+    list=data||[];
+  } else {
+    list=allStaff;
+  }
+  list=list.filter(s=>s.full_name.toLowerCase().includes(q)||s.email.toLowerCase().includes(q));
+  const tbody=document.getElementById('staff-tbody');
+  tbody.innerHTML=list.length===0?`<tr><td colspan="6" style="text-align:center;padding:40px;color:var(--muted)">Personel bulunamadı</td></tr>`:list.map(s=>{
+    const b=leaveBalances.find(x=>x.profile_id===s.id);
+    const bal=b?b.earned_days-b.used_days:null;
+    const balColor=bal===null?'var(--muted)':bal<0?'var(--red)':bal<=3?'var(--amber)':'var(--green)';
+    return`<tr>
+      <td><div style="display:flex;align-items:center;gap:10px"><div class="avatar" style="width:34px;height:34px;font-size:13px;background:#e0e7ff;color:var(--accent)">${initials(s.full_name)}</div><div><div style="font-weight:600">${s.full_name}</div><div style="font-size:11px;color:var(--muted)">${s.email}</div></div></div></td>
+      <td><span class="badge ${ROLE_BADGE[s.role]||'badge-gray'}">${ROLE_LABELS[s.role]||s.role}</span></td>
+      <td style="font-size:12px;color:var(--muted)">${s.start_date?new Date(s.start_date+'T12:00:00').toLocaleDateString('tr-TR'):'—'}</td>
+      <td>${bal!==null?('<span style="font-family:var(--mono);font-weight:700;color:'+balColor+'">'+bal+'</span><span style="font-size:11px;color:var(--muted);margin-left:4px">gün</span>'+(b?'<div style="font-size:10px;color:var(--muted)">'+b.earned_days+' kazanıldı · '+b.used_days+' kullanıldı</div>':'')):'<span style="color:var(--muted);font-size:12px">—</span>'}</td>
+      <td>${s.is_active?'<span class="badge badge-green">✓ Aktif</span>':'<span class="badge badge-gray">Pasif</span>'}</td>
+      <td>${isSupervisor()?`<div style="display:flex;gap:6px;justify-content:flex-end"><button class="btn btn-ghost btn-sm" onclick="openEditStaff('${s.id}')">Düzenle</button><button class="btn btn-ghost btn-sm" onclick="viewAs('${s.id}')" title="Bu kişinin gözünden bak">👁</button>${isAdmin()?`<button class="btn btn-${s.is_active?'danger':'success'} btn-sm" onclick="toggleActive('${s.id}',${!s.is_active})">${s.is_active?'Devre Dışı':'Aktifleştir'}</button>`:''}</div>`:''}</td>
+    </tr>`;
+  }).join('');
+}
+
+async function viewAs(profileId){
+  const p = allStaff.find(s=>s.id===profileId);
+  if(!p){ const { data } = await sb.from('profiles').select('*').eq('id',profileId).single(); setViewAs(data); }
+  else setViewAs(p);
+  showPage('dashboard');
+}
+
+async function toggleActive(id,val){
+  await sb.from('profiles').update({is_active:val}).eq('id',id);
+  await loadBaseData(); renderStaff();
+  toast(val?'Aktifleştirildi':'Devre dışı bırakıldı','info');
+}
+
+function openEditStaff(id){
+  const s=allStaff.find(x=>x.id===id)||{id,full_name:'',role:'agent',start_date:'',leave_entitlement:14};
+  showModal(`<div class="modal">
+    <div class="modal-header"><div class="modal-title">Personel Düzenle</div><button class="btn-close" onclick="closeModal()">×</button></div>
+    <div class="modal-body">
+      <div><label class="lbl">Ad Soyad</label><input class="input" id="ef-name" value="${s.full_name}"/></div>
+      ${isAdmin()?`
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div><label class="lbl">Rol</label><select class="select" id="ef-role"><option value="agent"${s.role==='agent'?' selected':''}>Temsilci</option><option value="supervisor"${s.role==='supervisor'?' selected':''}>Yönetici</option><option value="admin"${s.role==='admin'?' selected':''}>Admin</option></select></div>
+        <div><label class="lbl">Yıllık İzin (gün)</label><input class="input" id="ef-ent" type="number" value="${s.leave_entitlement||14}" min="0" max="60"/></div>
+      </div>
+      <div><label class="lbl">İşe Başlama Tarihi</label><input class="input" id="ef-start" type="date" value="${s.start_date||''}"/></div>`:''}
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal()">İptal</button>
+      <button class="btn btn-primary" onclick="saveEditStaff('${id}')">Kaydet</button>
+    </div>
+  </div>`);
+}
+
+async function saveEditStaff(id){
+  const updates={full_name:document.getElementById('ef-name').value.trim()};
+  if(isAdmin()){
+    updates.role=document.getElementById('ef-role').value;
+    updates.leave_entitlement=parseInt(document.getElementById('ef-ent').value)||14;
+    updates.start_date=document.getElementById('ef-start').value||null;
+  }
+  await sb.from('profiles').update(updates).eq('id',id);
+  closeModal(); await loadBaseData(); await loadLeaveBalances(); renderStaff();
+  toast('Kaydedildi ✓');
+}
+
+function openAddStaff(){
+  showModal(`<div class="modal">
+    <div class="modal-header"><div class="modal-title">Yeni Personel</div><button class="btn-close" onclick="closeModal()">×</button></div>
+    <div class="modal-body">
+      <div id="add-err" style="display:none;background:#fef2f2;border:1px solid #fecaca;color:#dc2626;font-size:13px;padding:10px 12px;border-radius:8px"></div>
+      <div><label class="lbl">Ad Soyad *</label><input class="input" id="af-name" placeholder="Ad Soyad"/></div>
+      <div><label class="lbl">E-posta *</label><input class="input" id="af-email" type="email" placeholder="ad@sirket.com"/></div>
+      <div><label class="lbl">Şifre *</label><input class="input" id="af-pw" type="password" placeholder="En az 6 karakter"/></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div><label class="lbl">Rol</label><select class="select" id="af-role"><option value="agent">Temsilci</option><option value="supervisor">Yönetici</option><option value="admin">Admin</option></select></div>
+        <div><label class="lbl">Yıllık İzin (gün)</label><input class="input" id="af-ent" type="number" value="14" min="0" max="60"/></div>
+      </div>
+      <div><label class="lbl">İşe Başlama Tarihi</label><input class="input" id="af-start" type="date"/></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal()">İptal</button>
+      <button class="btn btn-primary" onclick="submitAddStaff()">Ekle</button>
+    </div>
+  </div>`);
+}
+
+async function submitAddStaff(){
+  const name=document.getElementById('af-name').value.trim();
+  const email=document.getElementById('af-email').value.trim();
+  const pw=document.getElementById('af-pw').value;
+  const errEl=document.getElementById('add-err');
+  errEl.style.display='none';
+  if(!name||!email||!pw){errEl.textContent='Tüm zorunlu alanları doldurun';errEl.style.display='block';return;}
+  const { data, error } = await sb.auth.signUp({ email, password:pw, options:{ data:{ full_name:name, role:document.getElementById('af-role').value } } });
+  if(error){errEl.textContent=error.message;errEl.style.display='block';return;}
+  if(data.user){
+    await sb.from('profiles').update({
+      full_name:name, role:document.getElementById('af-role').value,
+      start_date:document.getElementById('af-start').value||null,
+      leave_entitlement:parseInt(document.getElementById('af-ent').value)||14
+    }).eq('id',data.user.id);
+  }
+  closeModal(); await loadBaseData(); await loadLeaveBalances(); renderStaff();
+  toast('Personel eklendi ✓');
+}
+
+// ── Users ─────────────────────────────────────────────────────────────────────
+async function renderUsers(){
+  const { data:users } = await sb.from('profiles').select('*').in('role',['admin','supervisor']).order('full_name');
+  const tbody=document.getElementById('users-tbody');
+  if(!users||users.length===0){ tbody.innerHTML='<tr><td colspan="4" style="text-align:center;padding:40px;color:var(--muted)">Kullanıcı bulunamadı</td></tr>'; return; }
+  tbody.innerHTML=users.map(u=>`<tr>
+    <td><div style="display:flex;align-items:center;gap:10px">
+      <div class="avatar" style="width:34px;height:34px;font-size:13px;background:#e0e7ff;color:var(--accent)">${initials(u.full_name)}</div>
+      <div><div style="font-weight:600">${u.full_name}</div><div style="font-size:11px;color:var(--muted)">${u.email}</div></div>
+    </div></td>
+    <td><span class="badge ${ROLE_BADGE[u.role]||'badge-gray'}">${ROLE_LABELS[u.role]||u.role}</span></td>
+    <td>${u.is_active?'<span class="badge badge-green">✓ Aktif</span>':'<span class="badge badge-gray">Pasif</span>'}</td>
+    <td><div style="display:flex;gap:6px">
+      <button class="btn btn-ghost btn-sm" onclick="openEditStaff('${u.id}')">Düzenle</button>
+      ${isAdmin()?`<button class="btn btn-${u.is_active?'danger':'success'} btn-sm" onclick="toggleActive('${u.id}',${!u.is_active})">${u.is_active?'Devre Dışı':'Aktifleştir'}</button>`:''}
+    </div></td>
+  </tr>`).join('');
+}
+
+// ── Reports ───────────────────────────────────────────────────────────────────
+async function renderReports(){
+  // Only agent leave requests
+  const agentIds2=allStaff.map(s=>s.id);
+  let leaves=[];
+  if(agentIds2.length>0){
+    const {data:ld}=await sb.from('leave_requests').select('leave_type,status,hours,start_date,end_date').in('profile_id',agentIds2);
+    leaves=ld||[];
+  }
+  const approved=leaves.filter(l=>l.status==='approved').length;
+  const pending=leaves.filter(l=>l.status==='pending').length;
+  const negBal=leaveBalances.filter(b=>b.earned_days-b.used_days<0).length;
+  const avgBal=leaveBalances.length>0?(leaveBalances.reduce((a,b)=>a+(b.earned_days-b.used_days),0)/leaveBalances.length).toFixed(1):0;
+
+  document.getElementById('report-stats').innerHTML=[
+    {l:'Aktif Personel',v:allStaff.length,c:'#4f8ef7'},
+    {l:'Onaylı İzin',v:approved,c:'#10b981'},
+    {l:'Bekleyen İzin',v:pending,c:'#f59e0b'},
+    {l:'Eksi Bakiyeli',v:negBal,c:'#ef4444'},
+    {l:'Ort. İzin Bakiyesi',v:avgBal+' gün',c:'#8b5cf6'},
+    {l:'Yıllık Atama',v:allYearAssignments.length,c:'#0ea5e9'},
+  ].map(s=>`<div class="stat-card" style="--accent-color:${s.c}"><div class="stat-value" style="color:${s.c};font-size:${typeof s.v==='string'?'20px':'26px'}">${s.v}</div><div class="stat-label">${s.l}</div></div>`).join('');
+
+  function barChart(items,max,el){
+    if(!items.length){document.getElementById(el).innerHTML='<p style="color:var(--muted);font-size:12px">Veri yok</p>';return;}
+    document.getElementById(el).innerHTML='<div class="chart-bar-wrap">'+items.map(i=>`<div class="chart-row"><div class="chart-label">${i.l}</div><div class="chart-bar-bg"><div class="chart-bar" style="width:${max>0?(i.v/max*100).toFixed(0):0}%;background:${i.c}"></div></div><div class="chart-val">${i.v}</div></div>`).join('')+'</div>';
+  }
+
+  const typeColors={annual:'#4f8ef7',unpaid:'#8b5cf6',report:'#ef4444',other:'#10b981',hourly:'#f59e0b'};
+  const typeMap={};
+  leaves.forEach(l=>{typeMap[l.leave_type]=(typeMap[l.leave_type]||0)+1;});
+  const typeItems=Object.entries(typeMap).map(([k,v])=>({l:LEAVE_TYPES[k]||k,v,c:typeColors[k]||'#4f8ef7'}));
+  barChart(typeItems,Math.max(1,...typeItems.map(x=>x.v)),'leave-type-chart');
+
+  const otItems=allStaff.map(s=>{
+    const ot=yearlyOT(s.id);
+    return{l:s.full_name.split(' ')[0],v:parseFloat(ot.toFixed(1)),c:ot>=270?'#ef4444':ot>=200?'#f59e0b':'#10b981'};
+  }).filter(x=>x.v>0).sort((a,b)=>b.v-a.v);
+  barChart(otItems,270,'overtime-chart');
+  if(!otItems.length) document.getElementById('overtime-chart').innerHTML='<p style="color:var(--muted);font-size:12px">Fazla mesai yok</p>';
+
+  if(!leaveBalances.length){document.getElementById('balance-table').innerHTML='<p style="color:var(--muted);font-size:12px">Veri yok</p>';return;}
+  document.getElementById('balance-table').innerHTML=`<table><thead><tr><th>Personel</th><th style="text-align:right">Kazanılan</th><th style="text-align:right">Kullanılan</th><th style="text-align:right">Bakiye</th></tr></thead><tbody>`+
+    leaveBalances.map(b=>{
+      const bal=b.earned_days-b.used_days;
+      const c=bal<0?'var(--red)':bal<=3?'var(--amber)':'var(--green)';
+      return`<tr><td>${b.full_name}</td><td style="text-align:right;font-family:var(--mono)">${b.earned_days}</td><td style="text-align:right;font-family:var(--mono)">${b.used_days}</td><td style="text-align:right;font-family:var(--mono);font-weight:700;color:${c}">${bal}</td></tr>`;
+    }).join('')+'</tbody></table>';
+}
+
+// ── Profile ───────────────────────────────────────────────────────────────────
+function renderProfile(){
+  const p = currentProfile;
+  if(!p){ document.getElementById('profile-info').innerHTML='<p style="color:var(--muted)">Yükleniyor...</p>'; return; }
+  const b = leaveBalances.find(x=>x.profile_id===p.id);
+  const bal = b ? b.earned_days - b.used_days : null;
+  document.getElementById('profile-info').innerHTML=`
+    <div style="display:flex;align-items:center;gap:14px;margin-bottom:16px">
+      <div class="avatar" style="width:52px;height:52px;font-size:18px;background:#e0e7ff;color:var(--accent)">${initials(p.full_name)}</div>
+      <div>
+        <div style="font-size:16px;font-weight:700">${p.full_name}</div>
+        <div style="font-size:13px;color:var(--muted)">${p.email}</div>
+        <span class="badge ${ROLE_BADGE[p.role]||'badge-gray'} mt-1">${ROLE_LABELS[p.role]||p.role}</span>
+      </div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;font-size:13px">
+      <div class="card" style="padding:12px;background:var(--bg3)">
+        <div style="color:var(--muted);font-size:11px;margin-bottom:4px">İŞBAŞI TARİHİ</div>
+        <div style="font-weight:600">${p.start_date ? new Date(p.start_date+'T12:00:00').toLocaleDateString('tr-TR') : '—'}</div>
+      </div>
+      ${p.role==='agent' && bal!==null ? `<div class="card" style="padding:12px;background:var(--bg3)">
+        <div style="color:var(--muted);font-size:11px;margin-bottom:4px">İZİN BAKİYESİ</div>
+        <div style="font-weight:700;color:${bal<0?'var(--red)':bal<=3?'var(--amber)':'var(--green)'}">${bal} gün</div>
+      </div>` : ''}
+    </div>`;
+  // Clear password fields
+  ['pw-current','pw-new','pw-confirm'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
+  document.getElementById('pw-error').style.display='none';
+  document.getElementById('pw-success').style.display='none';
+}
+
+async function changePassword(){
+  const current = document.getElementById('pw-current').value;
+  const newPw   = document.getElementById('pw-new').value;
+  const confirm = document.getElementById('pw-confirm').value;
+  const errEl   = document.getElementById('pw-error');
+  const okEl    = document.getElementById('pw-success');
+  errEl.style.display='none'; okEl.style.display='none';
+
+  if(!current||!newPw||!confirm){ errEl.textContent='Tüm alanları doldurun'; errEl.style.display='block'; return; }
+  if(newPw.length<6){ errEl.textContent='Yeni şifre en az 6 karakter olmalı'; errEl.style.display='block'; return; }
+  if(newPw!==confirm){ errEl.textContent='Yeni şifreler eşleşmiyor'; errEl.style.display='block'; return; }
+
+  // Verify current password by re-authenticating
+  const verifyRes = await fetch(SUPA_URL+'/auth/v1/token?grant_type=password', {
+    method:'POST',
+    headers:{'apikey':SUPA_KEY,'Content-Type':'application/json'},
+    body:JSON.stringify({email:currentProfile.email, password:current})
+  });
+  if(!verifyRes.ok){ errEl.textContent='Mevcut şifre hatalı'; errEl.style.display='block'; return; }
+
+  // Update password using current token
+  const updateRes = await fetch(SUPA_URL+'/auth/v1/user', {
+    method:'PUT',
+    headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+_authToken,'Content-Type':'application/json'},
+    body:JSON.stringify({password:newPw})
+  });
+  if(!updateRes.ok){
+    const err=await updateRes.json();
+    errEl.textContent=err.message||'Şifre güncellenemedi';
+    errEl.style.display='block'; return;
+  }
+  okEl.style.display='block';
+  ['pw-current','pw-new','pw-confirm'].forEach(id=>{ document.getElementById(id).value=''; });
+  toast('Şifre güncellendi ✓');
+}
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+init();
+</script>
+</body>
+</html>
