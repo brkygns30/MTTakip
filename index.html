@@ -117,6 +117,9 @@ tr:hover td{background:rgba(0,0,0,.015);}
 .cal-day.other-month{background:var(--bg3);opacity:.5;}
 .cal-day.today-cell{border-color:var(--accent);background:rgba(79,142,247,.03);}
 .cal-day.weekend-cell{background:#fafbff;}
+.cal-day.holiday-cell{background:#fff7ed !important;border-color:#fed7aa;}
+.cal-day.holiday-cell .cal-day-num{color:#ea580c;}
+.holiday-badge{font-size:9px;color:#ea580c;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:2px;}
 .cal-day-num{font-size:11px;font-weight:700;color:var(--muted);margin-bottom:4px;font-family:var(--mono);}
 .cal-day.today-cell .cal-day-num{color:var(--accent);}
 .cal-tags{display:flex;flex-direction:column;gap:2px;}
@@ -458,7 +461,9 @@ let leavesTab = 'all';
 let dndState = { profileId:'', assignId:'', type:'' };
 let viewAsProfile = null;
 let dropLock = false;
-let dailyQuota = 1; // default daily staff count // admin/supervisor viewing as an agent
+let dailyQuota = 1; // default daily staff count
+let dailyQuotas = {}; // date -> quota map
+let publicHolidays = {}; // date -> holiday name map // admin/supervisor viewing as an agent
 
 const MONTHS = ['Ocak','Şubat','Mart','Nisan','Mayıs','Haziran','Temmuz','Ağustos','Eylül','Ekim','Kasım','Aralık'];
 const DAYS   = ['Pzt','Sal','Çar','Per','Cum','Cmt','Paz'];
@@ -621,6 +626,10 @@ async function loadBaseData(){
   allShifts=shifts||[];
   allStaff=staff||[];
   if(allShifts[0]?.min_staff) dailyQuota=allShifts[0].min_staff;
+  // Load public holidays
+  const {data:holidays}=await sb.from('public_holidays').select('*');
+  publicHolidays={};
+  (holidays||[]).forEach(h=>{ publicHolidays[h.date]=h.name; });
   await loadYearAssignments();
   await loadLeaveBalances();
 }
@@ -652,6 +661,10 @@ async function loadMonthAssignments(){
     profile: profileMap[a.profile_id]||null,
     shift: shiftMap[a.shift_id]||null,
   }));
+  // Load daily quotas for this month
+  const {data:qdata}=await sb.from('daily_quotas').select('*').gte('date',ys).lte('date',ye);
+  dailyQuotas={};
+  (qdata||[]).forEach(q=>{ dailyQuotas[q.date]=q.quota; });
 }
 async function loadLeaves(){
   let q=sb.from('leave_requests').select('*').order('created_at',{ascending:false});
@@ -777,14 +790,8 @@ function renderCalendar(){
   // Actions
   const actEl=document.getElementById('cal-actions');
   if(isSupervisor()&&!isViewingAs()){
-    actEl.innerHTML=`<div style="display:flex;align-items:center;gap:6px">
-      <span style="font-size:12px;color:var(--muted)">Günlük kişi:</span>
-      <input type="number" min="1" max="20" value="${dailyQuota}" id="quota-input"
-        style="width:52px;padding:4px 8px;border:1px solid var(--border);border-radius:6px;font-size:13px;text-align:center"
-        onchange="updateQuota(this.value)"/>
-    </div>
-    <button class="btn btn-ghost btn-sm" onclick="autoAssign()">⚡ Otomatik Ata</button>
-    <button class="btn btn-ghost btn-sm" onclick="printSchedule()">🖨️ PDF</button>`;
+    actEl.innerHTML='<button class="btn btn-ghost btn-sm" onclick="autoAssign()">⚡ Otomatik Ata</button>'
+      +'<button class="btn btn-ghost btn-sm" onclick="printSchedule()">🖨️ PDF</button>';
   } else { actEl.innerHTML=''; }
 
   // Staff panel
@@ -827,14 +834,20 @@ function renderCalendar(){
     if(isToday)cls+=' today-cell';
     if(isWeekend)cls+=' weekend-cell';
     const cellA=monthAssignments.filter(a=>a.date===ds&&(!shift||a.shift_id===shift.id));
-    const quota=dailyQuota;
+    const quota=dailyQuotas[ds]||dailyQuota;
     const isFull=cellA.length>=quota;
     const quotaColor=cellA.length===0?'var(--muted)':isFull?'var(--green)':'var(--amber)';
-    html+=`<div class="${cls}" data-date="${ds}" data-shiftid="${shift?.id||''}">
+    const isHoliday=!!publicHolidays[ds];
+    if(isHoliday) cls+=' holiday-cell';
+    html+=`<div class="${cls}" data-date="${ds}" data-shiftid="${shift?.id||''}" title="${isHoliday?publicHolidays[ds]:''}">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:3px">
         <div class="cal-day-num" style="margin-bottom:0">${d}</div>
-        <span style="font-size:10px;font-weight:600;color:${quotaColor};font-family:var(--mono)">${cellA.length}/${quota}</span>
+        <span style="font-size:10px;font-weight:600;color:${quotaColor};font-family:var(--mono);${isSupervisor()&&!isViewingAs()?'cursor:pointer':''}"
+          ${isSupervisor()&&!isViewingAs()?`onclick="event.stopPropagation();openQuotaPopup('${ds}',${quota},this)"`:''}>
+          ${cellA.length}/${quota}
+        </span>
       </div>
+      ${isHoliday?`<div class="holiday-badge">🔴 ${publicHolidays[ds]}</div>`:''}
       <div class="cal-tags">
         ${cellA.map(a=>`<div class="cal-tag" draggable="${(isSupervisor()&&!isViewingAs())||(a.profile_id===currentUser?.id&&!isFull)}" data-assignid="${a.id}" data-profileid="${a.profile_id}" style="background:${shift?.color||'#4f8ef7'}">
           <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:70px">${a.profile?.full_name?.split(' ')[0]||'?'}</span>
@@ -911,9 +924,10 @@ function renderCalendar(){
         if(alreadyHere){toast('Bu personel zaten bu günde atanmış','info');return;}
 
         // Quota check - count assignments on this date (excluding moved one)
+        const dayQuota=dailyQuotas[date]||dailyQuota;
         const dateCount=monthAssignments.filter(a=>a.date===date&&(type==='staff'||a.id!==assignId)).length;
-        if(type==='staff'&&dateCount>=dailyQuota){
-          toast('⛔ Bu gün için maksimum kişi sayısına ('+dailyQuota+') ulaşıldı','error');
+        if(type==='staff'&&dateCount>=dayQuota){
+          toast('⛔ Bu gün için maksimum kişi sayısına ('+dayQuota+') ulaşıldı','error');
           return;
         }
 
@@ -944,6 +958,67 @@ function renderCalendar(){
   }
 }
 
+
+function openQuotaPopup(date, currentQuota, triggerEl){
+  // Remove any existing popup
+  const existing=document.getElementById('quota-popup');
+  if(existing){ existing.remove(); return; }
+
+  const popup=document.createElement('div');
+  popup.id='quota-popup';
+  popup.style.cssText='position:fixed;z-index:200;background:#fff;border:1px solid var(--border2);border-radius:10px;padding:14px;box-shadow:0 8px 32px rgba(0,0,0,.12);min-width:180px';
+
+  const rect=triggerEl.getBoundingClientRect();
+  popup.style.top=(rect.bottom+6)+'px';
+  popup.style.left=Math.min(rect.left, window.innerWidth-200)+'px';
+
+  popup.innerHTML=`
+    <div style="font-size:12px;font-weight:600;color:var(--muted);margin-bottom:10px">${fmtShort(date)} — Kontenjan</div>
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
+      <button onclick="adjustQuota(-1)" style="width:28px;height:28px;border-radius:6px;border:1px solid var(--border);background:var(--bg3);cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center">−</button>
+      <input type="number" id="quota-val" value="${currentQuota}" min="1" max="20"
+        style="width:52px;text-align:center;padding:4px 8px;border:1px solid var(--border);border-radius:6px;font-size:15px;font-weight:700"/>
+      <button onclick="adjustQuota(1)" style="width:28px;height:28px;border-radius:6px;border:1px solid var(--border);background:var(--bg3);cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center">+</button>
+    </div>
+    <div style="display:flex;gap:6px">
+      <button onclick="saveQuotaPopup('${date}')" class="btn btn-primary btn-sm" style="flex:1;justify-content:center">Kaydet</button>
+      <button onclick="document.getElementById('quota-popup').remove()" class="btn btn-ghost btn-sm">İptal</button>
+    </div>`;
+
+  document.body.appendChild(popup);
+
+  // Close on outside click
+  setTimeout(()=>{
+    document.addEventListener('click', function closePopup(e){
+      if(!popup.contains(e.target)&&e.target!==triggerEl){ popup.remove(); document.removeEventListener('click',closePopup); }
+    });
+  }, 100);
+}
+
+function adjustQuota(delta){
+  const input=document.getElementById('quota-val');
+  if(!input)return;
+  const val=Math.max(1,Math.min(20,(parseInt(input.value)||1)+delta));
+  input.value=val;
+}
+
+async function saveQuotaPopup(date){
+  const val=parseInt(document.getElementById('quota-val')?.value)||1;
+  const quota=Math.max(1,val);
+
+  // Check if existing quota for this date
+  const {data:existing}=await sb.from('daily_quotas').select('id').eq('date',date);
+  if(existing&&existing.length>0){
+    await sb.from('daily_quotas').update({quota}).eq('date',date);
+  } else {
+    await sb.from('daily_quotas').insert({date,quota,created_by:currentUser.id});
+  }
+  dailyQuotas[date]=quota;
+  document.getElementById('quota-popup').remove();
+  await loadMonthAssignments();
+  renderCalendar();
+  toast(fmtShort(date)+' kontenjansı: '+quota+' kişi','info');
+}
 
 async function updateQuota(val){
   const n = parseInt(val)||1;
@@ -998,8 +1073,9 @@ function openAssignModal(shiftId,date){
 async function doAssign(shiftId,date,profileId){
   const check=checkRules(shiftId,date,profileId,null);
   if(!check.ok){toast('⛔ '+check.msg,'error');closeModal();return;}
+  const dayQuota2=dailyQuotas[date]||dailyQuota;
   const dateCount=monthAssignments.filter(a=>a.date===date).length;
-  if(dateCount>=dailyQuota){toast('⛔ Bu gün için maksimum kişi sayısına ('+dailyQuota+') ulaşıldı','error');closeModal();return;}
+  if(dateCount>=dayQuota2){toast('⛔ Bu gün için maksimum kişi sayısına ('+dayQuota2+') ulaşıldı','error');closeModal();return;}
   const { error:insertErr } = await sb.from('assignments').insert({profile_id:profileId,shift_id:shiftId,date,created_by:currentUser.id});
   if(insertErr){
     if(insertErr.code==='23505') toast('Bu personel zaten bu günde atanmış','info');
@@ -1386,58 +1462,109 @@ async function renderWorkSummary(){
 
   document.getElementById('work-month-label').textContent=MONTHS[mo]+' '+yr;
 
-  // Load assignments for this month
+  const shift=allShifts[0];
+  const daily=shift?shiftHours(shift):9;
+  const normalWeekLimit=45;
+
+  // Load assignments
   const {data:asgns}=await sb.from('assignments').select('*').gte('date',ys).lte('date',ye);
   const monthA=asgns||[];
 
-  const shift=allShifts[0];
-  const daily=shift?shiftHours(shift):9;
-  const normalLimit=45; // weekly normal hours
+  // Load leaves (approved) for this month
+  const {data:lvs}=await sb.from('leave_requests').select('*').eq('status','approved').or('start_date.lte.'+ye+',end_date.gte.'+ys);
+  const monthLeaves=lvs||[];
 
-  // Determine which staff to show
-  const staffToShow = isSupervisor() ? allStaff : allStaff.filter(s=>s.id===currentUser.id);
+  // Load holidays for this month
+  const {data:hols}=await sb.from('public_holidays').select('*').gte('date',ys).lte('date',ye);
+  const monthHolidays=new Set((hols||[]).map(h=>h.date));
 
-  // Build summary per staff
-  const rows = staffToShow.map(s=>{
-    const myA = monthA.filter(a=>a.profile_id===s.id);
-    const totalDays = myA.length;
-    const totalHours = totalDays * daily;
+  // Count total holiday hours in month (working days that are holidays)
+  let totalHolidayHoursInMonth=0;
+  for(let d=new Date(ys+'T12:00:00'); d<=new Date(ye+'T12:00:00'); d.setDate(d.getDate()+1)){
+    const ds=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+    const dow=d.getDay();
+    if(monthHolidays.has(ds) && dow!==0 && dow!==6) totalHolidayHoursInMonth+=daily;
+  }
 
-    // Calculate overtime by week
+  // Staff to show
+  const staffToShow=isSupervisor()?allStaff:allStaff.filter(s=>s.id===currentUser.id);
+
+  const rows=staffToShow.map(s=>{
+    const myA=monthA.filter(a=>a.profile_id===s.id);
+
+    // Categorize each assignment
+    let normalHours=0, overtimeHours=0, holidayWorkHours=0, weekendWorkHours=0;
+
+    // Weekly map for overtime calc (excluding holiday work)
     const weekMap={};
     myA.forEach(a=>{
-      const mon=weekMon(a.date);
-      if(!weekMap[mon])weekMap[mon]=0;
-      weekMap[mon]+=daily;
-    });
-    let normalHours=0, overtimeHours=0;
-    Object.values(weekMap).forEach(wh=>{
-      if(wh<=normalLimit){ normalHours+=wh; }
-      else { normalHours+=normalLimit; overtimeHours+=(wh-normalLimit); }
+      const dow=new Date(a.date+'T12:00:00').getDay();
+      const isHol=monthHolidays.has(a.date);
+      const isWknd=dow===0||dow===6;
+
+      if(isHol){ holidayWorkHours+=daily; }
+      else if(isWknd){ weekendWorkHours+=daily; }
+      else {
+        const mon=weekMon(a.date);
+        if(!weekMap[mon])weekMap[mon]=0;
+        weekMap[mon]+=daily;
+      }
     });
 
-    return { staff:s, totalDays, totalHours, normalHours, overtimeHours };
+    // Normal vs overtime from weekdays
+    Object.values(weekMap).forEach(wh=>{
+      if(wh<=normalWeekLimit){ normalHours+=wh; }
+      else { normalHours+=normalWeekLimit; overtimeHours+=(wh-normalWeekLimit); }
+    });
+
+    // Leave hours this month
+    let leaveHours=0;
+    monthLeaves.filter(l=>l.profile_id===s.id).forEach(l=>{
+      if(l.leave_type==='hourly'){ leaveHours+=l.hours||0; }
+      else {
+        const ls=new Date(Math.max(new Date(l.start_date+'T12:00:00'),new Date(ys+'T12:00:00')));
+        const le=new Date(Math.min(new Date(l.end_date+'T12:00:00'),new Date(ye+'T12:00:00')));
+        for(let d=new Date(ls); d<=le; d.setDate(d.getDate()+1)){
+          const dow=d.getDay();
+          if(dow!==0&&dow!==6) leaveHours+=daily;
+        }
+      }
+    });
+
+    const totalHours=normalHours+overtimeHours+holidayWorkHours+weekendWorkHours;
+
+    return{staff:s,normalHours,overtimeHours,holidayWorkHours,weekendWorkHours,leaveHours,totalHolidayHoursInMonth,totalHours};
   });
 
-  // Table head
+  // Table
   const headEl=document.getElementById('work-summary-head');
-  headEl.innerHTML=`<th>Personel</th><th style="text-align:center">Çalışma Günü</th><th style="text-align:center">Toplam Saat</th><th style="text-align:center">Normal Saat</th><th style="text-align:center">Fazla Mesai</th>`;
+  headEl.innerHTML='<th>Personel</th>'
+    +'<th style="text-align:center">Normal<br><small>saat</small></th>'
+    +'<th style="text-align:center">Fazla Mesai<br><small>saat</small></th>'
+    +'<th style="text-align:center">Resmi Tatil<br><small>saat</small></th>'
+    +'<th style="text-align:center">Resmi Tatil<br>Mesaisi<br><small>saat</small></th>'
+    +'<th style="text-align:center">İzin<br><small>saat</small></th>'
+    +'<th style="text-align:center">Toplam<br><small>saat</small></th>';
 
-  // Table body
   const bodyEl=document.getElementById('work-summary-body');
   if(rows.length===0){
-    bodyEl.innerHTML='<tr><td colspan="5" style="text-align:center;padding:40px;color:var(--muted)">Veri yok</td></tr>';
+    bodyEl.innerHTML='<tr><td colspan="7" style="text-align:center;padding:40px;color:var(--muted)">Veri yok</td></tr>';
     return;
   }
+
+  function h_(v){ return `<td style="text-align:center;font-family:var(--mono);font-weight:600">${v>0?v.toFixed(1):'<span style=color:var(--muted)>—</span>'}</td>`; }
+
   bodyEl.innerHTML=rows.map(r=>`<tr>
     <td><div style="display:flex;align-items:center;gap:10px">
       <div class="avatar" style="width:30px;height:30px;font-size:12px;background:#e0e7ff;color:var(--accent)">${initials(r.staff.full_name)}</div>
       <span style="font-weight:500">${r.staff.full_name}</span>
     </div></td>
-    <td style="text-align:center;font-family:var(--mono);font-weight:600">${r.totalDays}</td>
-    <td style="text-align:center;font-family:var(--mono);font-weight:600">${r.totalHours.toFixed(1)}</td>
-    <td style="text-align:center;font-family:var(--mono);color:var(--green);font-weight:600">${r.normalHours.toFixed(1)}</td>
-    <td style="text-align:center;font-family:var(--mono);font-weight:600;color:${r.overtimeHours>0?'var(--amber)':'var(--muted)'}">${r.overtimeHours.toFixed(1)}</td>
+    ${h_(r.normalHours)}
+    <td style="text-align:center;font-family:var(--mono);font-weight:600;color:${r.overtimeHours>0?'var(--amber)':'var(--muted)'}">${r.overtimeHours>0?r.overtimeHours.toFixed(1):'—'}</td>
+    ${h_(r.totalHolidayHoursInMonth)}
+    <td style="text-align:center;font-family:var(--mono);font-weight:600;color:${r.holidayWorkHours>0?'#ea580c':'var(--muted)'}">${r.holidayWorkHours>0?r.holidayWorkHours.toFixed(1):'—'}</td>
+    ${h_(r.leaveHours)}
+    <td style="text-align:center;font-family:var(--mono);font-weight:700;color:var(--accent)">${r.totalHours.toFixed(1)}</td>
   </tr>`).join('');
 }
 
