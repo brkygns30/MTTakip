@@ -381,6 +381,7 @@ function _q(table){
     lte(col,val){ _filters.push(col+'=lte.'+encodeURIComponent(val)); return q; },
     order(col,opts){ _order=col+(opts?.ascending===false?'.desc':'.asc'); return q; },
     limit(n){ _limit=n; return q; },
+    or(cond){ _filters.push(cond); return q; },
     single(){ _single=true; return q; },
     async then(resolve, reject){
       try {
@@ -1470,9 +1471,13 @@ async function renderWorkSummary(){
   const {data:asgns}=await sb.from('assignments').select('*').gte('date',ys).lte('date',ye);
   const monthA=asgns||[];
 
-  // Load leaves (approved) for this month
-  const {data:lvs}=await sb.from('leave_requests').select('*').eq('status','approved').or('start_date.lte.'+ye+',end_date.gte.'+ys);
-  const monthLeaves=lvs||[];
+  // Load leaves (approved) for this month - two queries merged
+  const {data:lvs1}=await sb.from('leave_requests').select('*').eq('status','approved').gte('end_date',ys);
+  const {data:lvs2}=await sb.from('leave_requests').select('*').eq('status','approved').lte('start_date',ye);
+  const seenIds=new Set();
+  const monthLeaves=[...(lvs1||[]),...(lvs2||[])].filter(l=>{
+    if(seenIds.has(l.id))return false; seenIds.add(l.id); return true;
+  });
 
   // Load holidays for this month
   const {data:hols}=await sb.from('public_holidays').select('*').gte('date',ys).lte('date',ye);
