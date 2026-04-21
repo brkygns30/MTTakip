@@ -797,10 +797,20 @@ async function renderDashboard(){
       }
     });
 
-    const deficit=Math.max(0, expNormal-workedNormalRaw);
-    const workedOT=Math.max(0, workedNormalRaw-expNormal);
+    // Annual leave doesn't count toward deficit
+    const {data:annualLvs}=await sb.from('leave_requests').select('hours,start_date,end_date,leave_type')
+      .eq('profile_id',myUid).eq('status','approved').eq('leave_type','annual').gte('end_date',ys).lte('start_date',ye);
+    let annualHrs=0;
+    (annualLvs||[]).forEach(l=>{
+      const ls2=new Date(Math.max(new Date(l.start_date+'T12:00:00'),new Date(ys+'T12:00:00')));
+      const le2=new Date(Math.min(new Date(l.end_date+'T12:00:00'),new Date(ye+'T12:00:00')));
+      for(let c=new Date(ls2);c<=le2;c.setDate(c.getDate()+1)) annualHrs+=daily;
+    });
+    const effectiveForDeficit2=workedNormalRaw+annualHrs;
+    const deficit=Math.max(0, expNormal-effectiveForDeficit2);
+    const workedOT=Math.max(0, effectiveForDeficit2-expNormal);
     const workedNormal=Math.min(workedNormalRaw, expNormal);
-    const totalWorked=workedNormal+expResmi+expHafta;
+    const totalWorked=workedNormal+annualHrs+expResmi+expHafta;
 
     // Mini calendar
     let offset=new Date(yr,mo,1).getDay()-1; if(offset<0)offset=6;
@@ -1666,13 +1676,14 @@ async function renderWorkSummary(){
       else otherLeaveHours+=hours;
     });
 
-    // Normal vs fazla mesai: sadece fiilen çalışılan saat baz alınır
-    // Diğer izinler ayrı gösterilir, çalışmadan düşülür (eksiğe yansır)
+    // Normal vs fazla mesai
+    // Yıllık izin eksik hesabına katılmaz, diğer izinler katılır
+    const effectiveForDeficit=workedNonHolidayHours+annualLeaveHours;
     const normalHours=Math.min(workedNonHolidayHours, expNormal);
-    const overtimeHours=Math.max(0, workedNonHolidayHours-expNormal);
-    const deficit=Math.max(0, expNormal-workedNonHolidayHours);
+    const overtimeHours=Math.max(0, effectiveForDeficit-expNormal);
+    const deficit=Math.max(0, expNormal-effectiveForDeficit);
 
-    const totalWorked=normalHours+expResmi+expHafta;
+    const totalWorked=normalHours+annualLeaveHours+expResmi+expHafta;
 
     return{staff:s,normalHours,overtimeHours,workedResmiMesai,
            annualLeaveHours,otherLeaveHours,
