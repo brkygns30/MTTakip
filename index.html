@@ -376,11 +376,11 @@ function _q(table){
   let _filters=[], _select='*', _order=null, _limit=null, _single=false;
   const q = {
     select(s){ _select=s; return q; },
-    eq(col,val){ _filters.push(col+'=eq.'+encodeURIComponent(val)); return q; },
-    neq(col,val){ _filters.push(col+'=neq.'+encodeURIComponent(val)); return q; },
+    eq(col,val){ _filters.push(col+'=eq.'+String(val)); return q; },
+    neq(col,val){ _filters.push(col+'=neq.'+String(val)); return q; },
     in(col,arr){ _filters.push(col+'=in.('+arr.map(v=>encodeURIComponent(v)).join(',')+')'); return q; },
-    gte(col,val){ _filters.push(col+'=gte.'+encodeURIComponent(val)); return q; },
-    lte(col,val){ _filters.push(col+'=lte.'+encodeURIComponent(val)); return q; },
+    gte(col,val){ _filters.push(col+'=gte.'+String(val)); return q; },
+    lte(col,val){ _filters.push(col+'=lte.'+String(val)); return q; },
     order(col,opts){ _order=col+(opts?.ascending===false?'.desc':'.asc'); return q; },
     limit(n){ _limit=n; return q; },
     or(cond){ _filters.push(cond); return q; },
@@ -415,7 +415,7 @@ const sb = {
       delete(){ 
         let _filters=[];
         const d={
-          eq(col,val){ _filters.push(col+'=eq.'+encodeURIComponent(val)); return d; },
+          eq(col,val){ _filters.push(col+'=eq.'+String(val)); return d; },
           then(resolve,reject){
             const path='/rest/v1/'+table+'?'+_filters.join('&');
             _req('DELETE',path,null).then(resolve).catch(reject);
