@@ -777,7 +777,9 @@ async function renderDashboard(){
       }
     });
 
-    const deficit=expNormal-workedNormal;
+    const deficit=Math.max(0, expNormal-workedNormal);
+    const workedOT=Math.max(0, workedNormal-expNormal);
+    workedNormal=Math.min(workedNormal, expNormal);
     const totalWorked=workedNormal+workedOT+workedResmiMesai;
 
     // Mini calendar
@@ -808,8 +810,8 @@ async function renderDashboard(){
         +'</div>';
     }
 
-    const deficitColor=deficit>0.1?'var(--red)':deficit<-0.1?'var(--green)':'var(--muted)';
-    const deficitLabel=Math.abs(deficit)<0.1?'Tamam':deficit>0?'+'+deficit.toFixed(1)+' eksik':Math.abs(deficit).toFixed(1)+' fazla';
+    const deficitColor=deficit>0.1?'var(--red)':workedOT>0.1?'var(--green)':'var(--muted)';
+    const deficitLabel=deficit>0.1?'+'+deficit.toFixed(1)+' eksik':workedOT>0.1?workedOT.toFixed(1)+' fazla mesai':'Tamam';
 
     const summaryHtml='<div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:14px;padding-top:14px;border-top:1px solid var(--border)">'
       +statCard('Normal',workedNormal.toFixed(1)+' s','var(--green)')
@@ -1584,29 +1586,19 @@ async function renderWorkSummary(){
   const rows=staffToShow.map(s=>{
     const myA=monthA.filter(a=>a.profile_id===s.id);
 
-    // Per-assignment hours
-    let workedNormal=0, workedResmiMesai=0;
-    const weekMap={};
+    // Resmi tatil mesaisi (tatil günü çalışılan × 9 saat)
+    let workedResmiMesai=0;
+    let workedNonHolidayHours=0;
     myA.forEach(a=>{
-      const d=new Date(a.date+'T12:00:00');
-      const dow=d.getDay();
-      const hol=monthHolMap[a.date];
-      if(hol){
-        // Resmi tatil mesaisi = 9 saat (tam vardiya)
-        workedResmiMesai+=daily;
-      } else {
-        // Normal/hafta sonu: haftalık overtime hesabı için group by week
-        const mon=weekMon(a.date);
-        if(!weekMap[mon])weekMap[mon]=0;
-        weekMap[mon]+=daily;
-      }
+      if(monthHolMap[a.date]){ workedResmiMesai+=daily; }
+      else { workedNonHolidayHours+=daily; }
     });
 
-    let normalHours=0, overtimeHours=0;
-    Object.values(weekMap).forEach(wh=>{
-      if(wh<=45){normalHours+=wh;}
-      else{normalHours+=45; overtimeHours+=(wh-45);}
-    });
+    // Normal vs fazla mesai: aylık beklenen normal saat baz alınır
+    const normalHours=Math.min(workedNonHolidayHours, expNormal);
+    const overtimeHours=Math.max(0, workedNonHolidayHours - expNormal);
+    const deficit=Math.max(0, expNormal - workedNonHolidayHours);   // eksik saat
+    const surplus=overtimeHours; // fazla mesai = overtimeHours ile aynı
 
     // Leave hours
     let leaveHours=0;
@@ -1622,11 +1614,9 @@ async function renderWorkSummary(){
     });
 
     const totalWorked=normalHours+overtimeHours+workedResmiMesai;
-    const expectedTotal=expNormal+expResmi+expHafta;
-    const deficit=expNormal-normalHours; // eksik normal çalışma
 
     return{staff:s,normalHours,overtimeHours,workedResmiMesai,leaveHours,
-           totalWorked,expNormal,expResmi,expHafta,expectedTotal,deficit};
+           totalWorked,expNormal,expResmi,expHafta,deficit};
   });
 
   // Table header
@@ -1665,8 +1655,8 @@ async function renderWorkSummary(){
     +hc(r.leaveHours,null)
     +'<td style="text-align:center;font-family:var(--mono);font-weight:700;color:var(--accent)">'+r.totalWorked.toFixed(1)+'</td>'
     +'<td style="text-align:center;font-family:var(--mono);font-weight:600;color:var(--muted)">'+r.expNormal.toFixed(1)+'</td>'
-    +'<td style="text-align:center;font-family:var(--mono);font-weight:700;color:'+(r.deficit>0.1?'var(--red)':r.deficit<-0.1?'var(--green)':'var(--muted)')+'">'+
-      (Math.abs(r.deficit)<0.1?'—':r.deficit>0?'+'+r.deficit.toFixed(1):r.deficit.toFixed(1))+'</td>'
+    +'<td style="text-align:center;font-family:var(--mono);font-weight:700;color:'+(r.deficit>0.1?'var(--red)':'var(--muted)')+'">'+
+      (r.deficit>0.1?'+'+r.deficit.toFixed(1)+' eksik':'—')+'</td>'
     +'</tr>').join('');
 }
 
