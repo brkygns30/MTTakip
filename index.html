@@ -1586,36 +1586,37 @@ async function renderWorkSummary(){
   const rows=staffToShow.map(s=>{
     const myA=monthA.filter(a=>a.profile_id===s.id);
 
-    // Resmi tatil mesaisi (tatil günü çalışılan × 9 saat)
-    let workedResmiMesai=0;
-    let workedNonHolidayHours=0;
+    // Resmi tatil mesaisi
+    let workedResmiMesai=0, workedNonHolidayHours=0;
     myA.forEach(a=>{
       if(monthHolMap[a.date]){ workedResmiMesai+=daily; }
       else { workedNonHolidayHours+=daily; }
     });
 
-    // Normal vs fazla mesai: aylık beklenen normal saat baz alınır
-    const normalHours=Math.min(workedNonHolidayHours, expNormal);
-    const overtimeHours=Math.max(0, workedNonHolidayHours - expNormal);
-    const deficit=Math.max(0, expNormal - workedNonHolidayHours);   // eksik saat
-    const surplus=overtimeHours; // fazla mesai = overtimeHours ile aynı
-
-    // Leave hours
-    let leaveHours=0;
+    // İzinleri türe göre ayır
+    let annualLeaveHours=0, otherLeaveHours=0;
     monthLeaves.filter(l=>l.profile_id===s.id).forEach(l=>{
-      if(l.leave_type==='hourly'){ leaveHours+=parseFloat(l.hours)||0; }
+      let hours=0;
+      if(l.leave_type==='hourly'){ hours=parseFloat(l.hours)||0; }
       else {
         const ls=new Date(Math.max(new Date(l.start_date+'T12:00:00'),new Date(ys+'T12:00:00')));
         const le=new Date(Math.min(new Date(l.end_date+'T12:00:00'),new Date(ye+'T12:00:00')));
-        for(let cur2=new Date(ls);cur2<=le;cur2.setDate(cur2.getDate()+1)){
-          leaveHours+=daily;
-        }
+        for(let cur2=new Date(ls);cur2<=le;cur2.setDate(cur2.getDate()+1)) hours+=daily;
       }
+      if(l.leave_type==='annual') annualLeaveHours+=hours;
+      else otherLeaveHours+=hours;
     });
+
+    // Normal vs fazla mesai: sadece fiilen çalışılan saat baz alınır
+    // Diğer izinler ayrı gösterilir, çalışmadan düşülür (eksiğe yansır)
+    const normalHours=Math.min(workedNonHolidayHours, expNormal);
+    const overtimeHours=Math.max(0, workedNonHolidayHours-expNormal);
+    const deficit=Math.max(0, expNormal-workedNonHolidayHours);
 
     const totalWorked=normalHours+expResmi+expHafta;
 
-    return{staff:s,normalHours,overtimeHours,workedResmiMesai,leaveHours,
+    return{staff:s,normalHours,overtimeHours,workedResmiMesai,
+           annualLeaveHours,otherLeaveHours,
            totalWorked,expNormal,expResmi,expHafta,deficit};
   });
 
@@ -1627,14 +1628,15 @@ async function renderWorkSummary(){
     +'<th style="text-align:center">Resmi Tatil<br><small style="font-weight:400">hak saat</small></th>'
     +'<th style="text-align:center">Res. Tatil<br>Mesaisi<br><small style="font-weight:400">saat</small></th>'
     +'<th style="text-align:center">Hafta Tatili<br><small style="font-weight:400">hak saat</small></th>'
-    +'<th style="text-align:center">İzin<br><small style="font-weight:400">saat</small></th>'
-    +'<th style="text-align:center">Toplam<br>Çalışma<br><small style="font-weight:400">saat</small></th>'
-    +'<th style="text-align:center">Beklenen<br>Normal<br><small style="font-weight:400">saat</small></th>'
+    +'<th style="text-align:center">Yıllık İzin<br><small style="font-weight:400">saat</small></th>'
+    +'<th style="text-align:center">Diğer İzin<br><small style="font-weight:400">saat</small></th>'
+    +'<th style="text-align:center">Toplam<br><small style="font-weight:400">saat</small></th>'
+    +'<th style="text-align:center">Beklenen<br><small style="font-weight:400">saat</small></th>'
     +'<th style="text-align:center">Eksik<br><small style="font-weight:400">saat</small></th>';
 
   const bodyEl=document.getElementById('work-summary-body');
   if(rows.length===0){
-    bodyEl.innerHTML='<tr><td colspan="10" style="text-align:center;padding:40px;color:var(--muted)">Veri yok</td></tr>';
+    bodyEl.innerHTML='<tr><td colspan="11" style="text-align:center;padding:40px;color:var(--muted)">Veri yok</td></tr>';
     return;
   }
 
@@ -1652,7 +1654,8 @@ async function renderWorkSummary(){
     +hc(r.expResmi,'var(--accent)')
     +hc(r.workedResmiMesai,r.workedResmiMesai>0?'#ea580c':null)
     +hc(r.expHafta,'var(--purple)')
-    +hc(r.leaveHours,null)
+    +hc(r.annualLeaveHours,r.annualLeaveHours>0?'var(--blue)':null)
+    +hc(r.otherLeaveHours,r.otherLeaveHours>0?'var(--muted)':null)
     +'<td style="text-align:center;font-family:var(--mono);font-weight:700;color:var(--accent)">'+r.totalWorked.toFixed(1)+'</td>'
     +'<td style="text-align:center;font-family:var(--mono);font-weight:600;color:var(--muted)">'+r.expNormal.toFixed(1)+'</td>'
     +'<td style="text-align:center;font-family:var(--mono);font-weight:700;color:'+(r.deficit>0.1?'var(--red)':'var(--muted)')+'">'+
