@@ -1677,9 +1677,11 @@ async function renderWorkSummary(){
     });
 
     // Normal vs fazla mesai
-    // Yıllık izin eksik hesabına katılmaz, diğer izinler katılır
-    const effectiveForDeficit=workedNonHolidayHours+annualLeaveHours;
-    const normalHours=Math.min(workedNonHolidayHours, expNormal);
+    // Yıllık izin eksik hesabına katılmaz
+    // Diğer izinler normal çalışmadan düşülür, eksiğe yansır
+    const workedMinusOtherLeave=Math.max(0, workedNonHolidayHours-otherLeaveHours);
+    const effectiveForDeficit=workedMinusOtherLeave+annualLeaveHours;
+    const normalHours=Math.min(workedMinusOtherLeave, expNormal);
     const overtimeHours=Math.max(0, effectiveForDeficit-expNormal);
     const deficit=Math.max(0, expNormal-effectiveForDeficit);
 
