@@ -780,7 +780,7 @@ async function renderDashboard(){
     const deficit=Math.max(0, expNormal-workedNormalRaw);
     const workedOT=Math.max(0, workedNormalRaw-expNormal);
     const workedNormal=Math.min(workedNormalRaw, expNormal);
-    const totalWorked=workedNormal+workedOT+workedResmiMesai;
+    const totalWorked=workedNormal+expResmi+expHafta;
 
     // Mini calendar
     let offset=new Date(yr,mo,1).getDay()-1; if(offset<0)offset=6;
@@ -1613,7 +1613,7 @@ async function renderWorkSummary(){
       }
     });
 
-    const totalWorked=normalHours+overtimeHours+workedResmiMesai;
+    const totalWorked=normalHours+expResmi+expHafta;
 
     return{staff:s,normalHours,overtimeHours,workedResmiMesai,leaveHours,
            totalWorked,expNormal,expResmi,expHafta,deficit};
