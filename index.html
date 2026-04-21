@@ -758,13 +758,13 @@ async function renderDashboard(){
     }
 
     // Actual worked hours
-    let workedNormal=0,workedOT=0,workedResmiMesai=0;
+    let workedNormalRaw=0,workedResmiMesai=0;
     const weekMap2={};
     (myA||[]).forEach(a=>{
       if(holMap[a.date]){ workedResmiMesai+=daily; }
       else { const mon=weekMon(a.date); if(!weekMap2[mon])weekMap2[mon]=0; weekMap2[mon]+=daily; }
     });
-    Object.values(weekMap2).forEach(wh=>{ if(wh<=45){workedNormal+=wh;}else{workedNormal+=45;workedOT+=(wh-45);} });
+    Object.values(weekMap2).forEach(wh=>{ workedNormalRaw+=wh; });
 
     // Leave hours
     let leaveHours=0;
@@ -777,9 +777,9 @@ async function renderDashboard(){
       }
     });
 
-    const deficit=Math.max(0, expNormal-workedNormal);
-    const workedOT=Math.max(0, workedNormal-expNormal);
-    workedNormal=Math.min(workedNormal, expNormal);
+    const deficit=Math.max(0, expNormal-workedNormalRaw);
+    const workedOT=Math.max(0, workedNormalRaw-expNormal);
+    const workedNormal=Math.min(workedNormalRaw, expNormal);
     const totalWorked=workedNormal+workedOT+workedResmiMesai;
 
     // Mini calendar
