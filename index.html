@@ -726,42 +726,105 @@ async function renderDashboard(){
   document.getElementById('dash-stats').innerHTML=stats.map(s=>`<div class="stat-card" style="--accent-color:${s.color}"><div style="font-size:24px;position:absolute;right:16px;top:16px;opacity:.25">${s.icon}</div><div class="stat-value">${s.val}</div><div class="stat-label">${s.label}</div></div>`).join('');
   const profMap={};allStaff.forEach(s=>{profMap[s.id]=s;});
   const shMap={};allShifts.forEach(s=>{shMap[s.id]=s;});
-  // Show monthly plan for agents
+  // Show monthly plan + work summary for agents
   if(!isSupervisor()||isViewingAs()){
     const myUid=viewingAsId()||currentUser.id;
-    const now=new Date();
-    const yr=now.getFullYear(); const mo=now.getMonth();
+    const now2=new Date();
+    const yr=now2.getFullYear(); const mo=now2.getMonth();
     const ys=yr+'-'+String(mo+1).padStart(2,'0')+'-01';
     const ye=yr+'-'+String(mo+1).padStart(2,'0')+'-'+new Date(yr,mo+1,0).getDate();
+
+    // Load assignments, holidays, leaves
     const {data:myA}=await sb.from('assignments').select('*').eq('profile_id',myUid).gte('date',ys).lte('date',ye);
+    const {data:hols}=await sb.from('public_holidays').select('*').gte('date',ys).lte('date',ye);
+    const {data:lvs}=await sb.from('leave_requests').select('*').eq('profile_id',myUid).eq('status','approved').gte('end_date',ys).lte('start_date',ye);
+
+    const holMap={};
+    (hols||[]).forEach(h=>{ holMap[h.date]={name:h.name,isArife:h.is_arife||false}; });
     const myDates=new Set((myA||[]).map(a=>a.date));
     const lastDay=new Date(yr,mo+1,0).getDate();
+    const shift=allShifts[0];
+    const daily=shift?shiftHours(shift):9;
+
+    // Expected hours this month
+    let expNormal=0,expResmi=0,expHafta=0;
+    for(let d=1;d<=lastDay;d++){
+      const ds=yr+'-'+String(mo+1).padStart(2,'0')+'-'+String(d).padStart(2,'0');
+      const dow=new Date(yr,mo,d).getDay();
+      const hol=holMap[ds];
+      if(dow===0){ hol?expResmi+=7.5:expHafta+=7.5; }
+      else if(dow===6){ if(hol){ hol.isArife?(expNormal+=4.5,expResmi+=3):(expResmi+=7.5); } else expNormal+=7.5; }
+      else { if(hol){ hol.isArife?(expNormal+=4.5,expResmi+=3):(expResmi+=7.5); } else expNormal+=7.5; }
+    }
+
+    // Actual worked hours
+    let workedNormal=0,workedOT=0,workedResmiMesai=0;
+    const weekMap2={};
+    (myA||[]).forEach(a=>{
+      if(holMap[a.date]){ workedResmiMesai+=daily; }
+      else { const mon=weekMon(a.date); if(!weekMap2[mon])weekMap2[mon]=0; weekMap2[mon]+=daily; }
+    });
+    Object.values(weekMap2).forEach(wh=>{ if(wh<=45){workedNormal+=wh;}else{workedNormal+=45;workedOT+=(wh-45);} });
+
+    // Leave hours
+    let leaveHours=0;
+    (lvs||[]).forEach(l=>{
+      if(l.leave_type==='hourly'){ leaveHours+=parseFloat(l.hours)||0; }
+      else {
+        const ls=new Date(Math.max(new Date(l.start_date+'T12:00:00'),new Date(ys+'T12:00:00')));
+        const le=new Date(Math.min(new Date(l.end_date+'T12:00:00'),new Date(ye+'T12:00:00')));
+        for(let cur=new Date(ls);cur<=le;cur.setDate(cur.getDate()+1)) leaveHours+=daily;
+      }
+    });
+
+    const deficit=expNormal-workedNormal;
+    const totalWorked=workedNormal+workedOT+workedResmiMesai;
+
+    // Mini calendar
     let offset=new Date(yr,mo,1).getDay()-1; if(offset<0)offset=6;
-    let calHtml='<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:3px;margin-bottom:6px">'+
-      ['Pzt','Sal','Çar','Per','Cum','Cmt','Paz'].map(d=>`<div style="text-align:center;font-size:10px;font-weight:700;color:var(--muted);padding:3px 0">${d}</div>`).join('')+'</div>';
-    calHtml+='<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:3px">';
+    let calHtml='<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:3px;margin-bottom:6px">'
+      +['Pzt','Sal','Çar','Per','Cum','Cmt','Paz'].map(d=>'<div style="text-align:center;font-size:10px;font-weight:700;color:var(--muted);padding:3px 0">'+d+'</div>').join('')+'</div>'
+      +'<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:3px">';
     for(let i=0;i<offset;i++) calHtml+='<div></div>';
-    const todayStr2=todayStr();
+    const tod=todayStr();
     for(let d=1;d<=lastDay;d++){
       const ds=yr+'-'+String(mo+1).padStart(2,'0')+'-'+String(d).padStart(2,'0');
       const isAssigned=myDates.has(ds);
-      const isToday=ds===todayStr2;
+      const isToday=ds===tod;
+      const isHol=!!holMap[ds];
       const dow=new Date(yr,mo,d).getDay();
       const isWknd=dow===0||dow===6;
-      calHtml+=`<div style="text-align:center;padding:4px 2px;border-radius:6px;font-size:11px;font-weight:${isToday?'700':'500'};
-        background:${isAssigned?'var(--accent)':isToday?'rgba(79,142,247,.1)':isWknd?'var(--bg3)':'transparent'};
-        color:${isAssigned?'#fff':isToday?'var(--accent)':'var(--muted)'}">${d}</div>`;
+      let bg=isAssigned?'var(--accent)':isHol?'#fff7ed':isToday?'rgba(79,142,247,.1)':isWknd?'var(--bg3)':'transparent';
+      let color=isAssigned?'#fff':isHol?'#ea580c':isToday?'var(--accent)':'var(--muted)';
+      calHtml+='<div style="text-align:center;padding:4px 2px;border-radius:6px;font-size:11px;font-weight:'+(isToday?'700':'500')+';background:'+bg+';color:'+color+'">'+d+'</div>';
     }
     calHtml+='</div>';
-    const shift=allShifts[0];
-    const totalDays=(myA||[]).length;
-    calHtml+=`<div style="display:flex;gap:12px;margin-top:12px;padding-top:12px;border-top:1px solid var(--border)">
-      <div><span style="font-size:11px;color:var(--muted)">ÇALIŞMA GÜNÜ</span><div style="font-weight:700;font-family:var(--mono)">${totalDays} gün</div></div>
-      <div><span style="font-size:11px;color:var(--muted)">TOPLAM SAAT</span><div style="font-weight:700;font-family:var(--mono)">${(totalDays*(shift?shiftHours(shift):9)).toFixed(1)} saat</div></div>
-      ${MONTHS[mo]} ${yr}
-    </div>`;
+
+    // Work summary cards
+    function statCard(label,value,color){
+      return '<div style="flex:1;min-width:80px;background:var(--bg3);border-radius:8px;padding:10px 12px">'
+        +'<div style="font-size:10px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.04em;margin-bottom:4px">'+label+'</div>'
+        +'<div style="font-size:16px;font-weight:700;font-family:var(--mono);color:'+color+'">'+value+'</div>'
+        +'</div>';
+    }
+
+    const deficitColor=deficit>0.1?'var(--red)':deficit<-0.1?'var(--green)':'var(--muted)';
+    const deficitLabel=Math.abs(deficit)<0.1?'Tamam':deficit>0?'+'+deficit.toFixed(1)+' eksik':Math.abs(deficit).toFixed(1)+' fazla';
+
+    const summaryHtml='<div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:14px;padding-top:14px;border-top:1px solid var(--border)">'
+      +statCard('Normal',workedNormal.toFixed(1)+' s','var(--green)')
+      +statCard('Fazla Mesai',workedOT>0?workedOT.toFixed(1)+' s':'—',workedOT>0?'var(--amber)':'var(--muted)')
+      +statCard('Res. Tatil Mes.',workedResmiMesai>0?workedResmiMesai.toFixed(1)+' s':'—',workedResmiMesai>0?'#ea580c':'var(--muted)')
+      +statCard('İzin',leaveHours>0?leaveHours.toFixed(1)+' s':'—','var(--muted)')
+      +statCard('Beklenen',expNormal.toFixed(1)+' s','var(--accent)')
+      +'<div style="flex:1;min-width:80px;background:'+(deficit>0.1?'#fef2f2':deficit<-0.1?'#f0fdf4':'var(--bg3)')+';border-radius:8px;padding:10px 12px">'
+        +'<div style="font-size:10px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.04em;margin-bottom:4px">Durum</div>'
+        +'<div style="font-size:16px;font-weight:700;font-family:var(--mono);color:'+deficitColor+'">'+deficitLabel+'</div>'
+        +'</div>'
+      +'</div>';
+
     document.getElementById('dash-monthly-plan').style.display='block';
-    document.getElementById('dash-monthly-calendar').innerHTML=calHtml;
+    document.getElementById('dash-monthly-calendar').innerHTML=calHtml+summaryHtml;
   } else {
     document.getElementById('dash-monthly-plan').style.display='none';
   }
@@ -1464,15 +1527,12 @@ async function renderWorkSummary(){
   document.getElementById('work-month-label').textContent=MONTHS[mo]+' '+yr;
 
   const shift=allShifts[0];
-  const daily=shift?shiftHours(shift):9;   // 9 saat/gün çalışma
-  const holidayRate=7.5;                    // resmi tatil hak saati
-  const normalWeekLimit=45;
+  const daily=shift?shiftHours(shift):9;
 
-  // Load assignments
+  // Load assignments, leaves, holidays
   const {data:asgns}=await sb.from('assignments').select('*').gte('date',ys).lte('date',ye);
   const monthA=asgns||[];
 
-  // Load leaves (approved) for this month - two queries merged
   const {data:lvs1}=await sb.from('leave_requests').select('*').eq('status','approved').gte('end_date',ys);
   const {data:lvs2}=await sb.from('leave_requests').select('*').eq('status','approved').lte('start_date',ye);
   const seenIds=new Set();
@@ -1480,93 +1540,107 @@ async function renderWorkSummary(){
     if(seenIds.has(l.id))return false; seenIds.add(l.id); return true;
   });
 
-  // Load holidays for this month
   const {data:hols}=await sb.from('public_holidays').select('*').gte('date',ys).lte('date',ye);
-  const monthHolidays=new Set((hols||[]).map(h=>h.date));
+  const monthHolMap={};
+  (hols||[]).forEach(h=>{ monthHolMap[h.date]={name:h.name,isArife:h.is_arife||false}; });
 
-  // Count total holiday hours in month (working days that are holidays)
-  let totalHolidayHoursInMonth=0;
-  for(let d=new Date(ys+'T12:00:00'); d<=new Date(ye+'T12:00:00'); d.setDate(d.getDate()+1)){
-    const ds=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
-    const dow=d.getDay();
-    if(monthHolidays.has(ds) && dow!==0 && dow!==6) totalHolidayHoursInMonth+=holidayRate;
+  // Helper: get category and hours for a date
+  function dayCategory(ds){
+    const d=new Date(ds+'T12:00:00');
+    const dow=d.getDay(); // 0=Sun,6=Sat
+    const hol=monthHolMap[ds];
+    if(dow===0){ // Pazar
+      return hol
+        ? {normal:0,resmi:7.5,hafta:0}   // Pazar + resmi tatil → resmi
+        : {normal:0,resmi:0,hafta:7.5};   // Normal Pazar → hafta tatili
+    } else if(dow===6){ // Cumartesi
+      if(hol){
+        return hol.isArife
+          ? {normal:4.5,resmi:3.0,hafta:0}  // Arife Cmt → normal 4.5 + resmi 3
+          : {normal:0,resmi:7.5,hafta:0};   // Tatil Cmt → resmi 7.5
+      }
+      return {normal:7.5,resmi:0,hafta:0};  // Normal Cmt → normal
+    } else { // Pzt-Cum
+      if(hol){
+        return hol.isArife
+          ? {normal:4.5,resmi:3.0,hafta:0}  // Arife → normal 4.5 + resmi 3
+          : {normal:0,resmi:7.5,hafta:0};   // Tatil → resmi 7.5
+      }
+      return {normal:7.5,resmi:0,hafta:0};  // Normal gün
+    }
   }
 
-  // Calculate expected hours for the month
-  // Pzt-Cmt: 7.5 saat, Pazar: 0 (hafta tatili), Resmi tatil: 0, Arife: 4.5 saat
-  let expectedHours=0;
+  // Calculate expected hours for month
+  let expNormal=0, expResmi=0, expHafta=0;
   for(let cur=new Date(ys+'T12:00:00'), end=new Date(ye+'T12:00:00'); cur<=end; cur.setDate(cur.getDate()+1)){
     const ds=cur.getFullYear()+'-'+String(cur.getMonth()+1).padStart(2,'0')+'-'+String(cur.getDate()).padStart(2,'0');
-    const dow=cur.getDay();
-    if(dow===0) continue; // Pazar
-    const hol=publicHolidays[ds];
-    if(hol){
-      if(hol.isArife) expectedHours+=4.5; // arife yarım gün
-      // normal tatil: 0
-      continue;
-    }
-    expectedHours+=7.5; // normal çalışma günü (Pzt-Cmt)
+    const cat=dayCategory(ds);
+    expNormal+=cat.normal; expResmi+=cat.resmi; expHafta+=cat.hafta;
   }
 
   // Staff to show
-  const staffToShow=isSupervisor()?allStaff:allStaff.filter(s=>s.id===currentUser.id);
+  const staffToShow=isSupervisor()&&!isViewingAs()?allStaff:allStaff.filter(s=>s.id===currentUser.id);
 
   const rows=staffToShow.map(s=>{
     const myA=monthA.filter(a=>a.profile_id===s.id);
 
-    // Categorize each assignment
-    let normalHours=0, overtimeHours=0, holidayWorkHours=0, weekendWorkHours=0;
-
-    // Weekly map for overtime calc (excluding holiday work)
+    // Per-assignment hours
+    let workedNormal=0, workedResmiMesai=0;
     const weekMap={};
     myA.forEach(a=>{
-      const dow=new Date(a.date+'T12:00:00').getDay();
-      const isHol=monthHolidays.has(a.date);
-      const isWknd=dow===0||dow===6;
-
-      if(isHol){ holidayWorkHours+=daily; }
-      else if(isWknd){ weekendWorkHours+=daily; }
-      else {
+      const d=new Date(a.date+'T12:00:00');
+      const dow=d.getDay();
+      const hol=monthHolMap[a.date];
+      if(hol){
+        // Resmi tatil mesaisi = 9 saat (tam vardiya)
+        workedResmiMesai+=daily;
+      } else {
+        // Normal/hafta sonu: haftalık overtime hesabı için group by week
         const mon=weekMon(a.date);
         if(!weekMap[mon])weekMap[mon]=0;
         weekMap[mon]+=daily;
       }
     });
 
-    // Normal vs overtime from weekdays
+    let normalHours=0, overtimeHours=0;
     Object.values(weekMap).forEach(wh=>{
-      if(wh<=normalWeekLimit){ normalHours+=wh; }
-      else { normalHours+=normalWeekLimit; overtimeHours+=(wh-normalWeekLimit); }
+      if(wh<=45){normalHours+=wh;}
+      else{normalHours+=45; overtimeHours+=(wh-45);}
     });
 
-    // Leave hours this month
+    // Leave hours
     let leaveHours=0;
     monthLeaves.filter(l=>l.profile_id===s.id).forEach(l=>{
-      if(l.leave_type==='hourly'){ leaveHours+=l.hours||0; }
+      if(l.leave_type==='hourly'){ leaveHours+=parseFloat(l.hours)||0; }
       else {
         const ls=new Date(Math.max(new Date(l.start_date+'T12:00:00'),new Date(ys+'T12:00:00')));
         const le=new Date(Math.min(new Date(l.end_date+'T12:00:00'),new Date(ye+'T12:00:00')));
-        for(let d=new Date(ls); d<=le; d.setDate(d.getDate()+1)){
-          const dow=d.getDay();
-          if(dow!==0&&dow!==6) leaveHours+=daily;
+        for(let cur2=new Date(ls);cur2<=le;cur2.setDate(cur2.getDate()+1)){
+          leaveHours+=daily;
         }
       }
     });
 
-    const totalHours=normalHours+overtimeHours+holidayWorkHours+weekendWorkHours;
+    const totalWorked=normalHours+overtimeHours+workedResmiMesai;
+    const expectedTotal=expNormal+expResmi+expHafta;
+    const deficit=expNormal-normalHours; // eksik normal çalışma
 
-    return{staff:s,normalHours,overtimeHours,holidayWorkHours,weekendWorkHours,leaveHours,totalHolidayHoursInMonth,totalHours};
+    return{staff:s,normalHours,overtimeHours,workedResmiMesai,leaveHours,
+           totalWorked,expNormal,expResmi,expHafta,expectedTotal,deficit};
   });
 
-  // Table
+  // Table header
   const headEl=document.getElementById('work-summary-head');
   headEl.innerHTML='<th>Personel</th>'
-    +'<th style="text-align:center">Normal<br><small>saat</small></th>'
-    +'<th style="text-align:center">Fazla Mesai<br><small>saat</small></th>'
-    +'<th style="text-align:center">Resmi Tatil<br><small>saat</small></th>'
-    +'<th style="text-align:center">Resmi Tatil<br>Mesaisi<br><small>saat</small></th>'
-    +'<th style="text-align:center">İzin<br><small>saat</small></th>'
-    +'<th style="text-align:center">Toplam<br><small>saat</small></th>';
+    +'<th style="text-align:center">Normal<br><small style="font-weight:400">saat</small></th>'
+    +'<th style="text-align:center">Fazla Mesai<br><small style="font-weight:400">saat</small></th>'
+    +'<th style="text-align:center">Resmi Tatil<br><small style="font-weight:400">hak saat</small></th>'
+    +'<th style="text-align:center">Res. Tatil<br>Mesaisi<br><small style="font-weight:400">saat</small></th>'
+    +'<th style="text-align:center">Hafta Tatili<br><small style="font-weight:400">hak saat</small></th>'
+    +'<th style="text-align:center">İzin<br><small style="font-weight:400">saat</small></th>'
+    +'<th style="text-align:center">Toplam<br>Çalışma<br><small style="font-weight:400">saat</small></th>'
+    +'<th style="text-align:center">Beklenen<br>Normal<br><small style="font-weight:400">saat</small></th>'
+    +'<th style="text-align:center">Eksik<br><small style="font-weight:400">saat</small></th>';
 
   const bodyEl=document.getElementById('work-summary-body');
   if(rows.length===0){
@@ -1574,21 +1648,28 @@ async function renderWorkSummary(){
     return;
   }
 
-  function h_(v){ return `<td style="text-align:center;font-family:var(--mono);font-weight:600">${v>0?v.toFixed(1):'<span style=color:var(--muted)>—</span>'}</td>`; }
+  function hc(v,color){
+    const c=color||(v>0?'var(--text)':'var(--muted)');
+    return '<td style="text-align:center;font-family:var(--mono);font-weight:600;color:'+c+'">'+(v>0?v.toFixed(1):'—')+'</td>';
+  }
 
-  bodyEl.innerHTML=rows.map(r=>`<tr>
-    <td><div style="display:flex;align-items:center;gap:10px">
-      <div class="avatar" style="width:30px;height:30px;font-size:12px;background:#e0e7ff;color:var(--accent)">${initials(r.staff.full_name)}</div>
-      <span style="font-weight:500">${r.staff.full_name}</span>
-    </div></td>
-    ${h_(r.normalHours)}
-    <td style="text-align:center;font-family:var(--mono);font-weight:600;color:${r.overtimeHours>0?'var(--amber)':'var(--muted)'}">${r.overtimeHours>0?r.overtimeHours.toFixed(1):'—'}</td>
-    ${h_(r.totalHolidayHoursInMonth)}
-    <td style="text-align:center;font-family:var(--mono);font-weight:600;color:${r.holidayWorkHours>0?'#ea580c':'var(--muted)'}">${r.holidayWorkHours>0?r.holidayWorkHours.toFixed(1):'—'}</td>
-    ${h_(r.leaveHours)}
-    <td style="text-align:center;font-family:var(--mono);font-weight:700;color:var(--accent)">${r.totalHours.toFixed(1)}</td>
-  </tr>`).join('');
+  bodyEl.innerHTML=rows.map(r=>'<tr>'
+    +'<td><div style="display:flex;align-items:center;gap:10px">'
+    +'<div class="avatar" style="width:30px;height:30px;font-size:12px;background:#e0e7ff;color:var(--accent)">'+initials(r.staff.full_name)+'</div>'
+    +'<span style="font-weight:500">'+r.staff.full_name+'</span></div></td>'
+    +hc(r.normalHours,'var(--green)')
+    +hc(r.overtimeHours,r.overtimeHours>0?'var(--amber)':null)
+    +hc(r.expResmi,'var(--accent)')
+    +hc(r.workedResmiMesai,r.workedResmiMesai>0?'#ea580c':null)
+    +hc(r.expHafta,'var(--purple)')
+    +hc(r.leaveHours,null)
+    +'<td style="text-align:center;font-family:var(--mono);font-weight:700;color:var(--accent)">'+r.totalWorked.toFixed(1)+'</td>'
+    +'<td style="text-align:center;font-family:var(--mono);font-weight:600;color:var(--muted)">'+r.expNormal.toFixed(1)+'</td>'
+    +'<td style="text-align:center;font-family:var(--mono);font-weight:700;color:'+(r.deficit>0.1?'var(--red)':r.deficit<-0.1?'var(--green)':'var(--muted)')+'">'+
+      (Math.abs(r.deficit)<0.1?'—':r.deficit>0?'+'+r.deficit.toFixed(1):r.deficit.toFixed(1))+'</td>'
+    +'</tr>').join('');
 }
+
 
 // ── Profile ───────────────────────────────────────────────────────────────────
 function renderProfile(){
