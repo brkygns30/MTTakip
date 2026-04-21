@@ -630,7 +630,7 @@ async function loadBaseData(){
   // Load public holidays
   const {data:holidays}=await sb.from('public_holidays').select('*');
   publicHolidays={};
-  (holidays||[]).forEach(h=>{ publicHolidays[h.date]=h.name; });
+  (holidays||[]).forEach(h=>{ publicHolidays[h.date]={ name:h.name, isArife:h.is_arife||false }; });
   await loadYearAssignments();
   await loadLeaveBalances();
 }
@@ -840,7 +840,7 @@ function renderCalendar(){
     const quotaColor=cellA.length===0?'var(--muted)':isFull?'var(--green)':'var(--amber)';
     const isHoliday=!!publicHolidays[ds];
     if(isHoliday) cls+=' holiday-cell';
-    html+=`<div class="${cls}" data-date="${ds}" data-shiftid="${shift?.id||''}" title="${isHoliday?publicHolidays[ds]:''}">
+    html+=`<div class="${cls}" data-date="${ds}" data-shiftid="${shift?.id||''}" title="${isHoliday?publicHolidays[ds].name:''}">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:3px">
         <div class="cal-day-num" style="margin-bottom:0">${d}</div>
         <span style="font-size:10px;font-weight:600;color:${quotaColor};font-family:var(--mono);${isSupervisor()&&!isViewingAs()?'cursor:pointer':''}"
@@ -848,7 +848,7 @@ function renderCalendar(){
           ${cellA.length}/${quota}
         </span>
       </div>
-      ${isHoliday?`<div class="holiday-badge">🔴 ${publicHolidays[ds]}</div>`:''}
+      ${isHoliday?`<div class="holiday-badge">${publicHolidays[ds].isArife?'🟡':'🔴'} ${publicHolidays[ds].name}</div>`:''}
       <div class="cal-tags">
         ${cellA.map(a=>`<div class="cal-tag" draggable="${(isSupervisor()&&!isViewingAs())||(a.profile_id===currentUser?.id&&!isFull)}" data-assignid="${a.id}" data-profileid="${a.profile_id}" style="background:${shift?.color||'#4f8ef7'}">
           <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:70px">${a.profile?.full_name?.split(' ')[0]||'?'}</span>
@@ -1464,7 +1464,8 @@ async function renderWorkSummary(){
   document.getElementById('work-month-label').textContent=MONTHS[mo]+' '+yr;
 
   const shift=allShifts[0];
-  const daily=shift?shiftHours(shift):9;
+  const daily=shift?shiftHours(shift):9;   // 9 saat/gün çalışma
+  const holidayRate=7.5;                    // resmi tatil hak saati
   const normalWeekLimit=45;
 
   // Load assignments
@@ -1488,7 +1489,23 @@ async function renderWorkSummary(){
   for(let d=new Date(ys+'T12:00:00'); d<=new Date(ye+'T12:00:00'); d.setDate(d.getDate()+1)){
     const ds=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
     const dow=d.getDay();
-    if(monthHolidays.has(ds) && dow!==0 && dow!==6) totalHolidayHoursInMonth+=daily;
+    if(monthHolidays.has(ds) && dow!==0 && dow!==6) totalHolidayHoursInMonth+=holidayRate;
+  }
+
+  // Calculate expected hours for the month
+  // Pzt-Cmt: 7.5 saat, Pazar: 0 (hafta tatili), Resmi tatil: 0, Arife: 4.5 saat
+  let expectedHours=0;
+  for(let cur=new Date(ys+'T12:00:00'), end=new Date(ye+'T12:00:00'); cur<=end; cur.setDate(cur.getDate()+1)){
+    const ds=cur.getFullYear()+'-'+String(cur.getMonth()+1).padStart(2,'0')+'-'+String(cur.getDate()).padStart(2,'0');
+    const dow=cur.getDay();
+    if(dow===0) continue; // Pazar
+    const hol=publicHolidays[ds];
+    if(hol){
+      if(hol.isArife) expectedHours+=4.5; // arife yarım gün
+      // normal tatil: 0
+      continue;
+    }
+    expectedHours+=7.5; // normal çalışma günü (Pzt-Cmt)
   }
 
   // Staff to show
@@ -1553,7 +1570,7 @@ async function renderWorkSummary(){
 
   const bodyEl=document.getElementById('work-summary-body');
   if(rows.length===0){
-    bodyEl.innerHTML='<tr><td colspan="7" style="text-align:center;padding:40px;color:var(--muted)">Veri yok</td></tr>';
+    bodyEl.innerHTML='<tr><td colspan="10" style="text-align:center;padding:40px;color:var(--muted)">Veri yok</td></tr>';
     return;
   }
 
