@@ -1551,20 +1551,43 @@ async function submitAddStaff(){
   const name=document.getElementById('af-name').value.trim();
   const email=document.getElementById('af-email').value.trim();
   const pw=document.getElementById('af-pw').value;
+  const role=document.getElementById('af-role').value;
+  const start=document.getElementById('af-start').value||null;
+  const ent=parseInt(document.getElementById('af-ent').value)||14;
   const errEl=document.getElementById('add-err');
   errEl.style.display='none';
   if(!name||!email||!pw){errEl.textContent='Tüm zorunlu alanları doldurun';errEl.style.display='block';return;}
-  const { data, error } = await sb.auth.signUp({ email, password:pw, options:{ data:{ full_name:name, role:document.getElementById('af-role').value } } });
-  if(error){errEl.textContent=error.message;errEl.style.display='block';return;}
-  if(data.user){
-    await sb.from('profiles').update({
-      full_name:name, role:document.getElementById('af-role').value,
-      start_date:document.getElementById('af-start').value||null,
-      leave_entitlement:parseInt(document.getElementById('af-ent').value)||14
-    }).eq('id',data.user.id);
+  if(pw.length<6){errEl.textContent='Şifre en az 6 karakter olmalı';errEl.style.display='block';return;}
+
+  // Use admin API to create user
+  const res=await fetch(SUPA_URL+'/auth/v1/admin/users', {
+    method:'POST',
+    headers:{
+      'apikey':SUPA_KEY,
+      'Authorization':'Bearer '+_authToken,
+      'Content-Type':'application/json'
+    },
+    body:JSON.stringify({
+      email, password:pw,
+      email_confirm:true,
+      user_metadata:{ full_name:name, role }
+    })
+  });
+  const data=await res.json();
+  if(!res.ok){
+    errEl.textContent=data.message||data.msg||'Kullanıcı oluşturulamadı';
+    errEl.style.display='block';
+    return;
   }
-  closeModal(); await loadBaseData(); await loadLeaveBalances(); renderStaff();
-  toast('Personel eklendi ✓');
+  // Update profile
+  if(data.id){
+    await sb.from('profiles').update({
+      full_name:name, role, start_date:start, leave_entitlement:ent
+    }).eq('id',data.id);
+  }
+  closeModal();
+  await loadBaseData(); await loadLeaveBalances(); renderStaff();
+  toast(name+' eklendi ✓');
 }
 
 // ── Users ─────────────────────────────────────────────────────────────────────
