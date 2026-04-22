@@ -348,6 +348,7 @@ tr:hover td{background:rgba(0,0,0,.015);}
 // ── Supabase REST client (fetch-based) ───────────────────────────────────────
 const SUPA_URL = 'https://baltamasxaowjrqzlrwa.supabase.co';
 const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJhbHRhbWFzeGFvd2pycXpscndhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU3MjQwMzQsImV4cCI6MjA5MTMwMDAzNH0.jiv_Z4W05rK2CBngtbS19QBoRm-ivtHa9xOl2GeGyGI';
+const SUPA_SERVICE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJhbHRhbWFzeGFvd2pycXpscndhIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3NTcyNDAzNCwiZXhwIjoyMDkxMzAwMDM0fQ.lFkc7A54SlstYg7oNFnElw4eiiT1DkjUCvzNubz98cA';
 let _authToken = null;
 
 function _headers(extra){
@@ -1465,8 +1466,8 @@ async function saveResetPassword(userId){
   const res=await fetch(SUPA_URL+'/auth/v1/admin/users/'+userId, {
     method:'PUT',
     headers:{
-      'apikey':SUPA_KEY,
-      'Authorization':'Bearer '+_authToken,
+      'apikey':SUPA_SERVICE_KEY,
+      'Authorization':'Bearer '+SUPA_SERVICE_KEY,
       'Content-Type':'application/json'
     },
     body:JSON.stringify({password:pw1})
@@ -1563,8 +1564,8 @@ async function submitAddStaff(){
   const res=await fetch(SUPA_URL+'/auth/v1/admin/users', {
     method:'POST',
     headers:{
-      'apikey':SUPA_KEY,
-      'Authorization':'Bearer '+_authToken,
+      'apikey':SUPA_SERVICE_KEY,
+      'Authorization':'Bearer '+SUPA_SERVICE_KEY,
       'Content-Type':'application/json'
     },
     body:JSON.stringify({
