@@ -453,6 +453,14 @@ const sb = {
       sessionStorage.removeItem('supa_session');
       if(window._authCb) window._authCb('SIGNED_OUT', null);
     },
+    async signUp({ email, password, options }){
+      const r = await _req('POST', '/auth/v1/signup', {
+        email, password,
+        data: options?.data || {}
+      });
+      if(r.error) return { data:null, error:r.error };
+      return { data:{ user: r.data }, error:null };
+    },
   }
 };
 
